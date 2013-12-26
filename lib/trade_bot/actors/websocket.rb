@@ -1,8 +1,4 @@
 
-require 'celluloid/redis'
-require 'celluloid/websocket/client'
-require 'uri'
-
 module TradeBot
   class WebsocketActor
     include Celluloid
@@ -22,8 +18,8 @@ module TradeBot
     end
 
     def on_message(data)
-      @redis.lpush("mtgox:steam", JSON.generate(data))
-      @redis.publish("mtgox:raw", JSON.generate(data))
+      @redis.lpush("mtgox:raw:history", JSON.generate(data))
+      @redis.publish("mtgox:raw:stream", JSON.generate(data))
     end
 
     def on_open
@@ -31,3 +27,4 @@ module TradeBot
     end
   end
 end
+
