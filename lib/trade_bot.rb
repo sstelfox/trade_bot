@@ -3,6 +3,7 @@
 require 'uri'
 
 # Gems
+require 'celluloid'
 require 'celluloid/redis'
 require 'celluloid/websocket/client'
 

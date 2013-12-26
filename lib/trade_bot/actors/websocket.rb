@@ -1,6 +1,6 @@
 
 module TradeBot
-  class WebsocketActor
+  class WebSocketActor
     include Celluloid
     include Celluloid::Logger
 
