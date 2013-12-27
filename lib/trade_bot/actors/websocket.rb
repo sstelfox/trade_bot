@@ -15,6 +15,8 @@ module TradeBot
       @url = SOCKET_URL + websocket_token
       @uri = URI.parse(@url)
 
+      info("Websocket URI: #{@uri}")
+
       @driver = WebSocket::Driver.client(self)
       @socket = Celluloid::IO::TCPSocket.new(@uri.host, @uri.port || 443)
 
@@ -22,6 +24,9 @@ module TradeBot
       #@redis = Redis.new(driver: :celluloid, url: redis_url)
 
       @driver.on(:message) { |e| info(e.data) }
+      @driver.on(:open) { |e| info("Opened: #{e.inspect}") }
+      @driver.on(:error) { |e| info("Error: #{e.inspect}") }
+      @driver.on(:close) { |e| info("Closed: #{e.inspect}") }
       @driver.start
 
       loop { parse(@socket.read) }
@@ -69,7 +74,9 @@ module TradeBot
       request = Net::HTTP::Get.new(uri.request_uri)
       response = http.request(request)
 
-      response.body.split(':').first
+      code = response.body.split(':').first
+      info("Websocket code: #{code}")
+      code
     rescue
       false
     end
