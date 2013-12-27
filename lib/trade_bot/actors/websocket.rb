@@ -73,10 +73,9 @@ module TradeBot
 
       request = Net::HTTP::Get.new(uri.request_uri)
       response = http.request(request)
+      info(response.body)
 
-      code = response.body.split(':').first
-      info("Websocket code: #{code}")
-      code
+      response.body.split(':').first
     rescue
       false
     end
