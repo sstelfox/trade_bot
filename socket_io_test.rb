@@ -9,6 +9,7 @@ module MessageParser
 
   # returns hash as {type: '1', id: '1', end_point: '4', data: [{key: value}]}
   def decode(string)
+    puts "Decoding message"
     (pieces = string.match(REGEX)) ? format(pieces) : {type: '0'}
   end
 
@@ -21,6 +22,8 @@ end
 
 module UnvalidatedGet
   def perform(uri)
+    puts "Getting connection: #{uri}"
+
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
 
@@ -45,6 +48,7 @@ module Session
   end
 
   def get_session(url)
+    puts "Getting session ID"
     UnvalidatedGet.perform(format_url(url)).split(':')
   end
 
@@ -58,6 +62,8 @@ class WS
     @uri = uri
     @url = @uri.to_s
 
+    puts "Setting up websocket"
+
     @driver = WebSocket::Driver.client(self)
     @socket = TCPSocket.new(@uri.host, @uri.port || 443)
   end
@@ -67,7 +73,10 @@ class WS
   end
 
   def receive
-    @socket.read
+    puts "Attempting to receive data"
+    @socket.readpartial(1024)
+  rescue
+    ""
   end
 
   def send(message)
@@ -75,6 +84,7 @@ class WS
   end
 
   def start
+    puts "Starting websocket"
     @driver.start
   end
 
@@ -84,30 +94,12 @@ class WS
 end
 
 class SocketIOClient
-  def initialize(url)
-    @uri = URI.parse(url)
-    session_values = Session.get_session(url)
-
-    @session_id         = session_values[0]
-    @heartbeat_timeout  = session_values[1]
-    @connection_timeout = session_values[2]
-    @transports         = session_values[3].split(',')
-  end
-
-  def start
-    connect_transport
-    start_receive_loop
-    self
-  end
-
-  def join
-    @thread.join
-  end
-
   def connect_transport
     unless @transports.include?('websocket')
       raise "The target server doesn't support websockets."
     end
+
+    puts "Connecting transport"
 
     conn = @uri.dup
     conn.scheme = (@uri.scheme == 'https') ? 'wss' : 'ws'
@@ -118,16 +110,38 @@ class SocketIOClient
     @transport.send("1::#{@uri.path}")
   end
 
+  def initialize(url)
+    @uri = URI.parse(url)
+    session_values = Session.get_session(url)
+
+    @session_id         = session_values[0]
+    @heartbeat_timeout  = session_values[1]
+    @connection_timeout = session_values[2]
+    @transports         = session_values[3].split(',')
+
+    puts "Setup complete"
+  end
+
+  def join
+    @thread.join
+  end
+
   def send_heartbeat
     @transport.send("2::")
   end
 
+  def start
+    connect_transport
+    start_receive_loop
+    self
+  end
+
   def start_receive_loop
     @thread = Thread.new do
-      while data = @transport.receive
-        decoded = MessageParser.decode(data)
-
+      loop do
+        data = @transport.receive
         puts(data)
+        decoded = MessageParser.decode(data)
 
         case decoded[:type]
         when '0'
@@ -156,6 +170,8 @@ class SocketIOClient
     @thread
   end
 end
+
+puts "Beginning the game..."
 
 sioc = SocketIOClient.new('https://socketio.mtgox.com/')
 sioc.start.join
