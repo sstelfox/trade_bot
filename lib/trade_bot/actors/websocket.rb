@@ -12,7 +12,8 @@ module TradeBot
     attr_reader :url
 
     def initialize
-      @uri = URI.parse(SOCKET_URL + websocket_token)
+      @url = SOCKET_URL + websocket_token
+      @uri = URI.parse(@url)
 
       @driver = WebSocket::Driver.client(self)
       @socket = Celluloid::IO::TCPSocket.new(@uri.host, @uri.port || 443)
@@ -21,8 +22,8 @@ module TradeBot
       #@redis = Redis.new(driver: :celluloid, url: redis_url)
 
       @driver.on(:message) { |e| info(e.data) }
-
       @driver.start
+
       loop { parse(@socket.read) }
     end
 
