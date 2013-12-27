@@ -18,9 +18,8 @@ module TradeBot::PubNub
 
       ciph = build_cipher(key)
       ciph.decrypt
-      ciph.update(raw)
 
-      decrypted_string = ciph.final.strip
+      decrypted_string = (ciph.update(raw) + ciph.final).strip
 
       # This is kind of a hack, the contents are either a plaintext string (in
       # which case it'll be invalid JSON) or it'll be JSON.
@@ -29,9 +28,22 @@ module TradeBot::PubNub
       "Decryption/Parse Error: #{e}"
     end
 
+    # Encrypt the provided message with the key, if the message is a complex
+    # object it will be JSON encoded before being encrypted. The output will be
+    # base64 encoded.
+    #
+    # @param [String] key
+    # @param [String,Object] message
+    # @return [String]
     def encrypt(key, message)
+      plaintext = (message.is_a?(String) ? message : JSON.generate(message))
+
       ciph = build_cipher(key)
       ciph.encrypt
+
+      Base64.encode64(ciph.update(plaintext) + ciph.final)
+    rescue => e
+      "Encryption Error: #{e}"
     end
 
     # Build and setup an instance of an OpenSSL cipher setup for use for either
