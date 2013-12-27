@@ -29,6 +29,8 @@ module TradeBot
       @driver.on(:close) { |e| info("Closed: #{e.inspect}") }
       @driver.start
 
+      send("1::#{@uri.path}")
+
       loop { parse(@socket.read) }
     end
 
