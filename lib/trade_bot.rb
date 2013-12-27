@@ -9,7 +9,7 @@ require 'celluloid/redis'
 require 'websocket/driver'
 
 # Local requires
-require 'trade_bot/actors/websocket'
+require 'trade_bot/actors/pubnub'
 require 'trade_bot/version'
 
 module TradeBot
