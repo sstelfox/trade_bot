@@ -2,14 +2,9 @@
 require 'net/https'
 
 module TradeBot
-  class WebSocketActor
+  class PubNubActor
     include Celluloid
     include Celluloid::Logger
-
-    BASE_SITE  = 'https://socketio.mtgox.com/mtgox'
-    SOCKET_URL = 'wss://socketio.mtgox.com/socket.io/1/websocket/'
-
-    attr_reader :url
 
     def initialize
       @url = SOCKET_URL + websocket_token
