@@ -1,18 +1,21 @@
 
+require 'net/https'
+
 module TradeBot
   class WebSocketActor
     include Celluloid
     include Celluloid::Logger
 
+    BASE_SITE  = 'https://socketio.mtgox.com/mtgox'
+    SOCKET_URL = 'wss://socketio.mtgox.com/socket.io/1/websocket/'
+
     attr_reader :url
 
     def initialize
-      @url = 'https://socketio.mtgox.com/mtgox'
-      @url = 'http://websocket.mtgox.com/mtgox'
-      @uri = URI.parse(url)
+      @uri = URI.parse(SOCKET_URL + websocket_token)
 
       @driver = WebSocket::Driver.client(self)
-      @socket = Celluloid::IO::TCPSocket.new(@uri.host, @uri.port)
+      @socket = Celluloid::IO::TCPSocket.new(@uri.host, @uri.port || 443)
 
       #redis_url = (ENV['REDIS_PROVIDER'] || 'redis://127.0.0.1:6379/0')
       #@redis = Redis.new(driver: :celluloid, url: redis_url)
@@ -39,6 +42,35 @@ module TradeBot
       #@redis.lpush("mtgox:raw:history", JSON.generate(data))
       #@redis.publish("mtgox:raw:stream", JSON.generate(data))
       info(event.inspect)
+    end
+
+    private
+
+    # Socket.io doesn't provide a straight websocket interface, instead you
+    # negotiate a one-time session key for a websocket and use that too
+    # connect. This method takes the public address MtGox provides and collects
+    # a websocket token that can be used to establish a token.
+    #
+    # @return [String] websocket authentication token
+    def websocket_token
+      uri = URI.parse(BASE_SITE)
+      uri.path = '/socket.io/1'
+      uri.query = "t=#{Time.now.to_i}"
+
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+
+      # TODO: Replace with StartSSL cert in config directory, it seems like the
+      # current reason the certificate is failing to validate is due too an
+      # expired certificate.
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+      request = Net::HTTP::Get.new(uri.request_uri)
+      response = http.request(request)
+
+      response.body.split(':').first
+    rescue
+      false
     end
   end
 end
