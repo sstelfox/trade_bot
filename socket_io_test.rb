@@ -9,7 +9,6 @@ module MessageParser
 
   # returns hash as {type: '1', id: '1', end_point: '4', data: [{key: value}]}
   def decode(string)
-    puts "Decoding message"
     (pieces = string.match(REGEX)) ? format(pieces) : {type: '0'}
   end
 
@@ -73,7 +72,6 @@ class WS
   end
 
   def receive
-    puts "Attempting to receive data"
     @socket.readpartial(1024)
   rescue
     ""
@@ -127,6 +125,7 @@ class SocketIOClient
   end
 
   def send_heartbeat
+    puts "Sending heartbeat"
     @transport.send("2::")
   end
 
@@ -140,7 +139,6 @@ class SocketIOClient
     @thread = Thread.new do
       loop do
         data = @transport.receive
-        puts(data)
         decoded = MessageParser.decode(data)
 
         case decoded[:type]
