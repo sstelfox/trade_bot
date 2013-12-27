@@ -1,4 +1,5 @@
 
+require 'json'
 require 'net/https'
 require 'uri'
 require 'websocket/driver'
@@ -51,16 +52,37 @@ module Session
 end
 
 class Websocket
+  attr_reader :url
+
+  def initialize(uri)
+    @uri = uri
+    @url = @uri.to_s
+
+    @driver = WebSocket::Driver.client(self)
+    @socket = TCPSocket.new(@uri.host, @uri.port || 443)
+  end
+
+  def start
+    @driver.start
+  end
+
+  def parse(data)
+    @driver.parse(data)
+  end
+
+  def send(message)
+    @driver.text(message)
+  end
+
+  def write(data)
+    @socket.write(data)
+  end
 end
 
 class SocketIOClient
-  attr_reader :url
-
   def initialize(url)
-    @url = url
-
-    @uri = URI.parse(@url)
-    session_values = Session.get_session(@url)
+    @uri = URI.parse(url)
+    session_values = Session.get_session(url)
 
     @session_id         = session_values[0]
     @heartbeat_timeout  = session_values[1]
@@ -82,7 +104,49 @@ class SocketIOClient
     conn.scheme = (@uri.scheme == 'https') ? 'wss' : 'ws'
     conn.port = (conn.scheme == 'wss') ? 443 : 80
     conn.path = "/socket.io/1/websocket/#{@session_id}"
+
+    @transport = WebSocket.new(conn)
+    @transport.send("1::#{@uri.path}")
+  end
+
+  def send_heartbeat
+    @transport.send("2::")
+  end
+
+  def start_receive_loop
+    @thread = Thread.new do
+      while data = @transport.receive
+        decoded = MessageParser.decode(data)
+
+        puts(data)
+
+        case decoded[:type]
+        when '0'
+          @on_disconnect.call if @on_disconnect
+        when '1'
+          @on_connect.call if @on_connect
+        when '2'
+          send_heartbeat
+        when '3'
+          @on_message.call(decoded[:data]) if @on_message
+        when '4'
+          @on_json_message.call(decoded[:data]) if @on_json_message
+        when '5'
+          message = JSON.parse(decoded[:data])
+          @on_event[message['name']].call(message['args']) if @on_event[message['name']]
+        when '6'
+          @on_ack.call if @on_ack
+        when '7'
+          @on_error.call(decoded[:data]) if @on_error
+        when '8'
+          @on_noop.call if @on_noop
+        end
+      end
+    end
+
+    @thread
   end
 end
 
 sioc = SocketIOClient.new('https://socketio.mtgox.com/')
+
