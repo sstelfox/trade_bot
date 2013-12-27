@@ -9,7 +9,7 @@ module MessageParser
 
   # returns hash as {type: '1', id: '1', end_point: '4', data: [{key: value}]}
   def decode(string)
-    (pieces = string.match(@regexp)) ? format(pieces) : {type: '0'}
+    (pieces = string.match(REGEX)) ? format(pieces) : {type: '0'}
   end
 
   def format(pieces)
@@ -51,7 +51,7 @@ module Session
   module_function :format_url, :get_session
 end
 
-class Websocket
+class WS
   attr_reader :url
 
   def initialize(uri)
@@ -62,16 +62,20 @@ class Websocket
     @socket = TCPSocket.new(@uri.host, @uri.port || 443)
   end
 
-  def start
-    @driver.start
-  end
-
   def parse(data)
     @driver.parse(data)
   end
 
+  def receive
+    @socket.read
+  end
+
   def send(message)
     @driver.text(message)
+  end
+
+  def start
+    @driver.start
   end
 
   def write(data)
@@ -93,6 +97,11 @@ class SocketIOClient
   def start
     connect_transport
     start_receive_loop
+    self
+  end
+
+  def join
+    @thread.join
   end
 
   def connect_transport
@@ -105,7 +114,7 @@ class SocketIOClient
     conn.port = (conn.scheme == 'wss') ? 443 : 80
     conn.path = "/socket.io/1/websocket/#{@session_id}"
 
-    @transport = WebSocket.new(conn)
+    @transport = WS.new(conn)
     @transport.send("1::#{@uri.path}")
   end
 
@@ -149,4 +158,5 @@ class SocketIOClient
 end
 
 sioc = SocketIOClient.new('https://socketio.mtgox.com/')
+sioc.start.join
 
