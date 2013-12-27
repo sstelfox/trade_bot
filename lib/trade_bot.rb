@@ -6,10 +6,9 @@ require 'uri'
 require 'celluloid'
 require 'celluloid/io'
 require 'celluloid/redis'
-require 'celluloid/websocket/client'
 
 # Local requires
-require 'celluloid/websocket'
+require 'celluloid/web_socket_client'
 require 'trade_bot/actors/websocket'
 require 'trade_bot/version'
 
