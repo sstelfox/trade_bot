@@ -5,11 +5,14 @@ module TradeBot
     include Celluloid::Logger
 
     def initialize
-      redis_url = (ENV['REDIS_PROVIDER'] || 'redis://127.0.0.1:6379/0')
-      mtgox_websocket = 'https://socketio.mtgox.com/mtgox'
+      @url = 'https://socketio.mtgox.com/mtgox'
+      @uri = URI.parse(url)
 
+      @driver = WebSocket::Driver.client(self)
+      @socket = Celluloid::IO
+
+      #redis_url = (ENV['REDIS_PROVIDER'] || 'redis://127.0.0.1:6379/0')
       #@redis = Redis.new(driver: :celluloid, url: redis_url)
-      @websocket = Celluloid::WebSocketClient.new(mtgox_websocket, current_actor)
     end
 
     def on_close
