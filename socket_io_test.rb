@@ -50,14 +50,38 @@ module Session
   module_function :format_url, :get_session
 end
 
+class Websocket
+end
+
 class SocketIOClient
+  attr_reader :url
+
   def initialize(url)
-    session_values = Session.get_session(url)
+    @url = url
+
+    @uri = URI.parse(@url)
+    session_values = Session.get_session(@url)
 
     @session_id         = session_values[0]
     @heartbeat_timeout  = session_values[1]
     @connection_timeout = session_values[2]
     @transports         = session_values[3].split(',')
+  end
+
+  def start
+    connect_transport
+    start_receive_loop
+  end
+
+  def connect_transport
+    unless @transports.include?('websocket')
+      raise "The target server doesn't support websockets."
+    end
+
+    conn = @uri.dup
+    conn.scheme = (@uri.scheme == 'https') ? 'wss' : 'ws'
+    conn.port = (conn.scheme == 'wss') ? 443 : 80
+    conn.path = "/socket.io/1/websocket/#{@session_id}"
   end
 end
 
