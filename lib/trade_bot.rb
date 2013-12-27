@@ -12,6 +12,9 @@ require 'trade_bot/actors/pubnub'
 require 'trade_bot/pubnub'
 require 'trade_bot/version'
 
+# We don't need no objects let the mother **** burn
+JSON.create_id = nil
+
 module TradeBot
 end
 
