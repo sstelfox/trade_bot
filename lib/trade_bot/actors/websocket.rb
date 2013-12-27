@@ -4,17 +4,20 @@ module TradeBot
     include Celluloid
     include Celluloid::Logger
 
-    MTGOX_WEBSOCKET_URL = URI.parse('https://socketio.mtgox.com/mtgox')
-
     def initialize
       redis_url = (ENV['REDIS_PROVIDER'] || 'redis://127.0.0.1:6379/0')
+      mtgox_websocket = 'https://socketio.mtgox.com/mtgox'
 
       #@redis = Redis.new(driver: :celluloid, url: redis_url)
-      @websocket = Celluloid::WebSocketClient.new(MTGOX_WEBSOCKET_URL, current_actor)
+      @websocket = Celluloid::WebSocketClient.new(mtgox_websocket, current_actor)
     end
 
     def on_close
       warn("MtGox Connection Closed: #{code.inspect}, #{reason.inspect}")
+    end
+
+    def on_error(err = '')
+      err("Some error occurred")
     end
 
     def on_message(data)
