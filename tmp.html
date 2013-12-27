@@ -1,0 +1,18 @@
+<!DOCTYPE>
+<html>
+  <head>
+    <script src="https://socketio.mtgox.com/socket.io/socket.io.js"></script>
+    <script>
+      var conn = io.connect('https://socketio.mtgox.com/mtgox');
+      conn.on('message', function(data) {
+        console.log(data);
+      });
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
+
+response = (GET: https://socketio.mtgox.com/socket.io/1/?t={unix timestamp})
+key = reponse.split(':').first
+CONNCET: wss://socketio.mtgox.com/socket.io/1/websocket/{key}
