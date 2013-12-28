@@ -1,7 +1,7 @@
 
-module TradeBot
-  module PubNub
-    class Client
+module TradeBot::PubNub
+  class Client
+    def initialize(*args)
     end
   end
 end
