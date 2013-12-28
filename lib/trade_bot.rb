@@ -8,6 +8,7 @@ require 'celluloid/io'
 require 'celluloid/redis'
 
 # Local requires
+require 'trade_bot/actors/ichimoku'
 require 'trade_bot/actors/pubnub'
 require 'trade_bot/version'
 

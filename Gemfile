@@ -8,6 +8,7 @@ gem 'pubnub'
 
 group :development do
   gem 'bundler'
+  gem 'foreman'
   gem 'rake'
   gem 'rspec'
   gem 'pry'
