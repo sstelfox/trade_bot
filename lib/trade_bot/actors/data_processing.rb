@@ -10,9 +10,7 @@ module TradeBot
     # Setup the data processing actor
     def initialize
       debug('Setting up the DataProcessingActor')
-
-      redis_url = (ENV['REDIS_PROVIDER'] || 'redis://127.0.0.1:6379/0')
-      @redis = ::Redis.new(url: redis_url, driver: :celluloid)
+      @redis = TradeBot.new_redis_instance
     end
 
     # Begin procesing messages for statistical purposes
@@ -46,17 +44,14 @@ module TradeBot
     end
 
     def update_ticker(ticker)
-      @redis.multi do
-        @redis.hset('trading:current', 'high', ticker['high']['value_int'])
-        @redis.hset('trading:current', 'last', ticker['last']['value_int'])
-        @redis.hset('trading:current', 'low', ticker['low']['value_int'])
-        @redis.hset('trading:current', 'avg', ticker['avg']['value_int'])
-        @redis.hset('trading:current', 'vwap', ticker['vwap']['value_int'])
-        @redis.hset('trading:current', 'vol', ticker['vol']['value_int'])
-        @redis.hset('trading:current', 'buy', ticker['buy']['value_int'])
-        @redis.hset('trading:current', 'sell', ticker['sell']['value_int'])
-        @redis.hset('trading:current', 'updated', ticker['stamp'])
+      redis = TradeBot.new_redis_instance
+
+      %w{ avg buy high last low sell vol vwap }.each do |s|
+        redis.hset('trading:current', s, ticker[s]['value_int'])
       end
+      redis.hset('trading:current', 'updated', ticker['stamp'])
+
+      info(redis.hgetall('trading:current'))
     end
 
     def update_lag(lag)

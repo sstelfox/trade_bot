@@ -13,8 +13,7 @@ module TradeBot
     # @param [Hash] options A hash of various options to setup the bot
     def initialize(name, options = {})
       @name = name.downcase.scan(/[a-z]/i).join
-      redis_url = (ENV['REDIS_PROVIDER'] || 'redis://127.0.0.1:6379/0')
-      @redis = ::Redis.new(url: redis_url, driver: :celluloid)
+      @redis = TradeBot.new_redis_instance
 
       setup_bot(options.fetch(:usd_init, 0), options.fetch(:btc_init, 5))
     end
@@ -25,7 +24,7 @@ module TradeBot
     # @param [Fixnum] usd
     # @param [Fixnum] btc
     def setup_bot(usd, btc)
-      @redis.multi do
+      @redis.pipelined do
         @redis.hsetnx("bot:#{@name}:settings", 'start:usd', usd * 1e5)
         @redis.hsetnx("bot:#{@name}:settings", 'start:btc', btc * 1e8)
         @redis.hsetnx("bot:#{@name}:settings", 'start:time', Time.now.to_f)
