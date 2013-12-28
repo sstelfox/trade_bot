@@ -7,6 +7,10 @@ module TradeBot
     include Celluloid
     include Celluloid::Logger
 
+    # Setup and initialize the bot.
+    #
+    # @param [String] name A unique name for an instance of this bot
+    # @param [Hash] options A hash of various options to setup the bot
     def initialize(name, options = {})
       @name = name.downcase.scan(/[a-z]/i).join
       redis_url = (ENV['REDIS_PROVIDER'] || 'redis://127.0.0.1:6379/0')
@@ -21,9 +25,15 @@ module TradeBot
     # @param [Fixnum] usd
     # @param [Fixnum] btc
     def setup_bot(usd, btc)
-      @redis.setnx("bot:#{@name}:usd", usd)
-      @redis.setnx("bot:#{@name}:btc", btc)
-      @redis.setnx("bot:#{@name}:start", Time.now.to_f)
+      @redis.multi do
+        @redis.hsetnx("bot:#{@name}:settings", 'init:usd', usd)
+        @redis.hsetnx("bot:#{@name}:settings", 'init:btc', btc)
+
+        @redis.hsetnx("bot:#{@name}:settings", 'usd', usd)
+        @redis.hsetnx("bot:#{@name}:settings", 'btc', btc)
+
+        @redis.hsetnx("bot:#{@name}:settings", 'start', Time.now.to_f)
+      end
     end
   end
 end
