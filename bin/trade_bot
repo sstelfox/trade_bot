@@ -11,6 +11,7 @@ Celluloid::Actor[:ichimoku_bot]  = TradeBot::IchimokuActor.new('ichimoku')
 Celluloid::Actor[:processing]    = TradeBot::DataProcessingActor.new
 
 # Start receiving data
+Celluloid::Actor[:processing].async.process
 Celluloid::Actor[:incoming_data].start
 
 loop { sleep 1 }

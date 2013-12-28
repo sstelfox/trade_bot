@@ -12,6 +12,8 @@ module TradeBot
     # Initialize pubnub actor and push all of our messages into redis for later
     # processing.
     def initialize
+      info('Setting up pubnub subscription')
+
       @channel_map = get_channels(RELEVANT_CHANNELS)
       @pubnub = Pubnub.new(
         logger: ::Logger.new('/dev/null'), # It's silly that the logger has to be disabled like this...
@@ -48,6 +50,8 @@ module TradeBot
     # Subscribe to the channels relevant to the bot and process being
     # processing it's messages.
     def start
+      info('Beginning to receive pubnub messages')
+
       @pubnub.subscribe(
         channels: @channel_map.values.join(","),
         callback: method(:handle_message),
