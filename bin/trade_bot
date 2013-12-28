@@ -5,5 +5,7 @@ $LOAD_PATH.unshift(base_path) unless $LOAD_PATH.include?(base_path)
 
 require 'trade_bot'
 
-Celluloid::Actor[:raw_stream] = TradeBot::PubNubActor.new
+Celluloid::Actor[:incoming_data] = TradeBot::PubNubActor.new
+Celluloid::Actor[:incoming_data].start
 
+loop { sleep 1 }
