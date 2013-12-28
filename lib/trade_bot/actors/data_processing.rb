@@ -32,7 +32,6 @@ module TradeBot
 
       case data['channel_name']
       when 'depth.BTCUSD'
-        info("Received message: #{data['depth']}")
         update_depth(data['depth'])
       when 'ticker.BTCUSD'
         update_ticker(data['ticker'])
@@ -40,14 +39,24 @@ module TradeBot
         update_lag(data['lag'])
       end
     rescue => e
-      error("Error handling history message: #{e.message}")
+      error("Error handling stream message: #{e.message}")
     end
 
     def update_depth(depth)
-      info(depth)
     end
 
     def update_ticker(ticker)
+      @redis.multi do
+        @redis.hset('trading:current', 'high', ticker['high']['value_int'])
+        @redis.hset('trading:current', 'last', ticker['last']['value_int'])
+        @redis.hset('trading:current', 'low', ticker['low']['value_int'])
+        @redis.hset('trading:current', 'avg', ticker['avg']['value_int'])
+        @redis.hset('trading:current', 'vwap', ticker['vwap']['value_int'])
+        @redis.hset('trading:current', 'vol', ticker['vol']['value_int'])
+        @redis.hset('trading:current', 'buy', ticker['buy']['value_int'])
+        @redis.hset('trading:current', 'sell', ticker['sell']['value_int'])
+        @redis.hset('trading:current', 'updated', ticker['stamp'])
+      end
     end
 
     def update_lag(lag)
