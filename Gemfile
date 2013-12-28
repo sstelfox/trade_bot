@@ -4,7 +4,7 @@ source 'https://rubygems.org'
 gem 'celluloid'
 gem 'celluloid-redis'
 
-gem 'websocket-driver'
+gem 'pubnub'
 
 group :development do
   gem 'bundler'

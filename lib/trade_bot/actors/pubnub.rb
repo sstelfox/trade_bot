@@ -7,7 +7,6 @@ module TradeBot
     include Celluloid::Logger
 
     def initialize
-      @pubnub = TradeBot::PubNub.new()
     end
   end
 end
