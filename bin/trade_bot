@@ -8,7 +8,7 @@ require 'trade_bot'
 # Setup our actors
 Celluloid::Actor[:incoming_data] = TradeBot::PubNubActor.new
 Celluloid::Actor[:ichimoku_bot]  = TradeBot::IchimokuActor.new('ichimoku')
-Celluloid::Actor[:processing]    = TradeBot::DataProcessingActor.new('ichimoku')
+Celluloid::Actor[:processing]    = TradeBot::DataProcessingActor.new
 
 # Start receiving data
 Celluloid::Actor[:incoming_data].start

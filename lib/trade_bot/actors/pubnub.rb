@@ -39,8 +39,8 @@ module TradeBot
     def handle_message(msg)
       encoded_msg = JSON.generate(msg.message)
 
-      @redis.publish("tradebot:stream", encoded_msg)
-      @redis.zadd("tradebot:history", Time.now.to_i, encoded_msg)
+      @redis.publish("pubnub:stream", encoded_msg)
+      @redis.zadd("pubnub:history", Time.now.to_i, encoded_msg)
     rescue => e
       error("Error handling message from pubnub: #{e.message}")
     end
