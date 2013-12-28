@@ -12,6 +12,8 @@ module TradeBot
     # @param [String] name A unique name for an instance of this bot
     # @param [Hash] options A hash of various options to setup the bot
     def initialize(name, options = {})
+      debug('Setting up the icimoku bot actor')
+
       @name = name.downcase.scan(/[a-z]/i).join
       @redis = TradeBot.new_redis_instance
 

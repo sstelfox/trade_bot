@@ -12,7 +12,7 @@ module TradeBot
     # Initialize pubnub actor and push all of our messages into redis for later
     # processing.
     def initialize
-      info('Setting up pubnub subscription')
+      debug('Setting up pubnub actor.')
 
       @channel_map = get_channels(RELEVANT_CHANNELS)
       @pubnub = Pubnub.new(
@@ -49,7 +49,7 @@ module TradeBot
     # Subscribe to the channels relevant to the bot and process being
     # processing it's messages.
     def start
-      info('Beginning to receive pubnub messages')
+      info('Subscribing to pubnub channels.')
 
       @pubnub.subscribe(
         channels: @channel_map.values.join(","),

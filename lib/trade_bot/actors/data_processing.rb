@@ -9,13 +9,13 @@ module TradeBot
 
     # Setup the data processing actor
     def initialize
-      debug('Setting up the DataProcessingActor')
+      debug('Setting up the data processing actor.')
       @redis = TradeBot.new_redis_instance
     end
 
     # Begin procesing messages for statistical purposes
     def process
-      info('Setting up subscription to local streams')
+      debug('Subscription to local redis stream for data processing.')
 
       @redis.subscribe('pubnub:stream') do |on|
         on.message { |_, msg| handle_message(msg) }
@@ -43,15 +43,27 @@ module TradeBot
     def update_depth(depth)
     end
 
+    # Process ticker messages we've received from the pubnub stream.
+    #
+    # @param [Hash<String => String>] ticker
     def update_ticker(ticker)
       redis = TradeBot.new_redis_instance
 
+      # Extract all the relevant values
+      instaneous_value = {}
       %w{ avg buy high last low sell vol vwap }.each do |s|
-        redis.hset('trading:current', s, ticker[s]['value_int'])
+        instaneous_value[s.to_sym] = ticker[s]['value_int'].to_i
       end
-      redis.hset('trading:current', 'updated', ticker['stamp'])
+      instaneous_value[:updated] = ticker['now'].to_i
 
-      info(redis.hgetall('trading:current'))
+      # Store the current values in redis
+      redis.pipelined do
+        instaneous_value.each do |key, val|
+          redis.hset('trading:current', key, val)
+        end
+      end
+
+      info(instaneous_value)
     end
 
     def update_lag(lag)
