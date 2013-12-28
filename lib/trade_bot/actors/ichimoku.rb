@@ -26,14 +26,18 @@ module TradeBot
     # @param [Fixnum] btc
     def setup_bot(usd, btc)
       @redis.multi do
-        @redis.hsetnx("bot:#{@name}:settings", 'init:usd', usd)
-        @redis.hsetnx("bot:#{@name}:settings", 'init:btc', btc)
+        @redis.hsetnx("bot:#{@name}:settings", 'start:usd', usd * 1e5)
+        @redis.hsetnx("bot:#{@name}:settings", 'start:btc', btc * 1e8)
+        @redis.hsetnx("bot:#{@name}:settings", 'start:time', Time.now.to_f)
 
-        @redis.hsetnx("bot:#{@name}:settings", 'usd', usd)
-        @redis.hsetnx("bot:#{@name}:settings", 'btc', btc)
-
-        @redis.hsetnx("bot:#{@name}:settings", 'start', Time.now.to_f)
+        @redis.hsetnx("bot:#{@name}:settings", 'current:usd', usd * 1e5)
+        @redis.hsetnx("bot:#{@name}:settings", 'current:btc', btc * 1e8)
       end
+    end
+
+    # Remove this bot's settings from redis
+    def clear_data
+      @redis.del("bot:#{@name}:settings")
     end
   end
 end

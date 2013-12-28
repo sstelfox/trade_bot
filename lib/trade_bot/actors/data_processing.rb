@@ -28,9 +28,29 @@ module TradeBot
     #
     # @param [String] msg
     def handle_message(msg)
-      info("Received message: #{JSON.parse(msg)}")
+      data = JSON.parse(msg)
+
+      case data['channel_name']
+      when 'depth.BTCUSD'
+        info("Received message: #{data['depth']}")
+        update_depth(data['depth'])
+      when 'ticker.BTCUSD'
+        update_ticker(data['ticker'])
+      when 'trade.lag'
+        update_lag(data['lag'])
+      end
     rescue => e
       error("Error handling history message: #{e.message}")
+    end
+
+    def update_depth(depth)
+      info(depth)
+    end
+
+    def update_ticker(ticker)
+    end
+
+    def update_lag(lag)
     end
   end
 end
