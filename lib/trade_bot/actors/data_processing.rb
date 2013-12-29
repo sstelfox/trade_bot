@@ -124,7 +124,7 @@ module TradeBot
 
         if redis.zcount('trading:data', period_start, period_end) > 0
           cs = build_candlestick('trading:data', period_start, period_end)
-          redis.zadd('trading:candlestick:minutely', time, JSON.generate(cs))
+          redis.zadd('trading:candlestick:minutely', period_start, JSON.generate(cs))
           info(cs)
         end
 
