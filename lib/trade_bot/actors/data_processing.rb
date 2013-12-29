@@ -67,28 +67,63 @@ module TradeBot
 
       # Check to see if we need to process this minute's worth of data
       cur_time = Time.now.to_i
-      minute_start = Time.at(cur_time - (cur_time % 60))
+      minute_start = (Time.at(cur_time - (cur_time % 60))).to_i * 1e6
 
       # Either no data has been processed, or at least one minute has passed
       # and data needs to be processed.
       last_minute_processed = redis.get('trading:processed:minutely')
-      if last_minute_processed.nil? || minute_start >= Time.parse(last_minute_processed)
+      if last_minute_processed.nil? || minute_start >= last_minute_processed.to_i
         # Figure out the time score of the first entry needing processing
-        start_value = (last_minute_processed ? (Time.parse(last_minute_processed).to_i * 1e6).to_i : 0)
-        _, time = redis.zrange("trading:data", start_value, 1, with_scores: true).first
+        start_value = last_minute_processed.to_i || 0
 
-        info(time.to_i)
-        info((minute_start.to_i * 1e6).to_i)
-        #while time <= (minute_start.to_i * 1e6)
+        # See if there are pending entries in need of processing
+        pending = redis.zrange("trading:data", start_value, 1, with_scores: true)
+        return if pending.empty?
+        time = pending[0][1]
+
+        # Loop through all the unprocessed data in minutely increments until we
+        # reach the current start of a minute.
+        while time <= minute_start
+          # Get the data for this minute
           relevant = redis.zrangebyscore('trading:data', time, time + (60 * 1e6))
-          info(relevant.size)
 
-          # Increment to the next 60 seconds
+          # If there isn't any data there is nothing to process
+          if relevant.size == 0
+            time += 60 * 1e6
+            next
+          end
+
+          # Parse the relevant data from it's JSON
+          relevant.map! { |d| JSON.parse(d) }
+
+          # Initialize the candlestick data with known values
+          candlestick = {
+            close: relevant[-1]["last"],
+            high:  relevant[0]["high"],
+            low:   relevant[0]["low"],
+            open:  relevant[0]["last"],
+            time:  time.to_i
+          }
+
+          # Find the highs and lows for the period
+          relevant.each do |d|
+            candlestick[:low] = d["low"]   if d["low"] < candlestick[:low]
+            candlestick[:high] = d["high"] if d["high"] < candlestick[:high]
+          end
+
+          # Calculate the average of the averages
+          candlestick[:avg] = (relevant.map { |r| r["avg"] }.inject(&:+)) / relevant.size
+          candlestick[:vol] = relevant.map { |r| r["vol"] }.inject(&:+)
+
           time += 60 * 1e6
-        #end
-      end
 
-      info(instaneous_value)
+          # We've just finished processing this minute
+          redis.zadd('trading:candlestick:minutely', time, JSON.generate(candlestick))
+          redis.set('trading:processed:minutely', time.to_i)
+
+          info(candlestick)
+        end
+      end
     end
 
     def update_lag(lag)
