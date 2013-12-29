@@ -89,9 +89,9 @@ module TradeBot
     def parse_raw(raw_ticker)
       useful_data = {}
       %w{ avg buy high last low sell vol vwap }.each do |s|
-        useful_data[s] = ticker[s]['value_int'].to_i
+        useful_data[s] = raw_ticker[s]['value_int'].to_i
       end
-      useful_data['time'] = ticker['now'].to_i
+      useful_data['time'] = raw_ticker['now'].to_i
       useful_data
     end
 
