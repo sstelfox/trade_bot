@@ -8,21 +8,6 @@ module TradeBot
     include Celluloid
     include Celluloid::Logger
 
-    # Setup the data processing actor
-    def initialize
-      debug('Setting up the data processing actor.')
-      @redis = TradeBot.new_redis_instance
-    end
-
-    # Begin procesing messages for statistical purposes
-    def process
-      debug('Subscription to local redis stream for data processing.')
-
-      @redis.subscribe('pubnub:stream') do |on|
-        on.message { |_, msg| handle_message(msg) }
-      end
-    end
-
     # Process messages received through the redis subscription.
     #
     # @param [String] msg
@@ -41,7 +26,36 @@ module TradeBot
       error("Error handling stream message: #{e.message}")
     end
 
-    def update_depth(depth)
+    # Setup the data processing actor
+    def initialize
+      debug('Setting up the data processing actor.')
+      @redis = TradeBot.new_redis_instance
+    end
+
+    # Begin procesing messages for statistical purposes
+    def process
+      debug('Subscription to local redis stream for data processing.')
+
+      @redis.subscribe('pubnub:stream') do |on|
+        on.message { |_, msg| handle_message(msg) }
+      end
+    end
+
+    # Parse raw ticker information into only the metrics that are valuable to
+    # us.
+    #
+    # @param [Hash<String => String>] raw_ticker
+    # @return [Hash<String => String>]
+    def parse_raw(raw_ticker)
+      useful_data = {}
+      %w{ avg buy high last low sell vol vwap }.each do |s|
+        useful_data[s] = ticker[s]['value_int'].to_i
+      end
+      useful_data['time'] = ticker['now'].to_i
+      useful_data
+    end
+
+    def build_candlestick(source_key, start_time, end_time)
     end
 
     # Process ticker messages we've received from the pubnub stream.
@@ -50,20 +64,9 @@ module TradeBot
     def update_ticker(ticker)
       redis = TradeBot.new_redis_instance
 
-      # Extract all the relevant values
-      instaneous_value = {}
-      %w{ avg buy high last low sell vol vwap }.each do |s|
-        instaneous_value[s.to_sym] = ticker[s]['value_int'].to_i
-      end
-      instaneous_value[:updated] = ticker['now'].to_i
-
-      # Store the current values in redis
-      redis.pipelined do
-        instaneous_value.each do |key, val|
-          redis.hset('trading:current', key, val)
-        end
-        redis.zadd('trading:data', ticker['now'], JSON.generate(instaneous_value))
-      end
+      # Extract all the relevant values and store it in redis
+      current = parse_raw(ticker)
+      redis.zadd('trading:data', current['time'], JSON.generate(current))
 
       # Check to see if we need to process this minute's worth of data
       cur_time = Time.now.to_i
@@ -72,7 +75,7 @@ module TradeBot
       # Either no data has been processed, or at least one minute has passed
       # and data needs to be processed.
       last_minute_processed = redis.get('trading:processed:minutely')
-      if last_minute_processed.nil? || minute_start >= last_minute_processed.to_i
+      if last_minute_processed.nil? || minute_start > last_minute_processed.to_i
         # Figure out the time score of the first entry needing processing
         start_value = last_minute_processed.to_i || 0
 
@@ -124,6 +127,9 @@ module TradeBot
           info(candlestick)
         end
       end
+    end
+
+    def update_depth(depth)
     end
 
     def update_lag(lag)
