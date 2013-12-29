@@ -97,8 +97,10 @@ module TradeBot
 
     # Update the various candlestick statistics.
     def update_candlesticks
-      check_candlestick(60)
-      check_candlestick(15 * 60)
+      check_candlestick(60)           # Minutely
+      check_candlestick(15 * 60)      # Quarter-hourly
+      check_candlestick(60 * 60)      # Hourly
+      check_candlestick(24 * 60 * 60) # Daily
     end
 
     def update_depth(depth)
