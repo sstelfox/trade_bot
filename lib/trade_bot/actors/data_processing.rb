@@ -97,6 +97,7 @@ module TradeBot
 
     # Update the various candlestick statistics.
     def update_candlesticks
+      debug("Updating candlesticks")
       check_candlestick(60)
       check_candlestick(15 * 60)
     end
@@ -127,16 +128,20 @@ module TradeBot
       # Either no data has been processed, or at least one minute has passed
       # and data needs to be processed.
       last_interval = (redis.get("trading:processed:#{interval}") || 0).to_i
-      while last_interval <= (processing_end - (interval * 1e6).to_i)
+      while last_interval < processing_end
         # Calculate period begin and end timestamps
         period_start = (last_interval - (last_interval % (interval * 1e6))).to_i
         period_end   = (period_start + (interval * 1e6)).to_i
+
+        info("Processing period from #{period_start} to #{period_end}")
 
         if redis.zcount('trading:data', period_start, period_end) > 0
           debug("Processing a interval #{interval}s of data.")
           cs = build_candlestick('trading:data', period_start, period_end)
           redis.zadd("trading:candlestick:#{interval}", period_start, JSON.generate(cs))
         end
+
+        info("Finished processing period.")
 
         last_interval = period_end
         redis.set("trading:candlestick:#{interval}", period_end)
