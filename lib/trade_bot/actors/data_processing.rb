@@ -138,19 +138,20 @@ module TradeBot
         period_start = (last_interval - (last_interval % (interval * 1e6))).to_i
         period_end   = (period_start + (interval * 1e6)).to_i
 
-        debug("Processing period from #{period_start} to #{period_end}")
+        debug("Processing period from #{display_date(period_start)} to #{display_date(period_end)}, (#{interval}s).")
 
         if redis.zcount('trading:data', period_start, period_end) > 0
-          debug("Processing a #{interval}s of data.")
           cs = build_candlestick('trading:data', period_start, period_end)
           redis.zadd("trading:candlestick:#{interval}", period_start, JSON.generate(cs))
         end
 
-        debug("Finished processing period.")
-
         last_interval = period_end
         redis.set("trading:processed:#{interval}", period_end)
       end
+    end
+
+    def display_date(num)
+      Time.at(num / 1e6).iso8601
     end
   end
 end
