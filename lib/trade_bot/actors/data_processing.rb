@@ -36,8 +36,8 @@ module TradeBot
 
       # Find the highs and lows for the period
       data.each do |d|
-        cs["low"]  = d["low"]  if d["low"]  < cs["low"]
-        cs["high"] = d["high"] if d["high"] > cs["high"]
+        cs["low"]  = d["last"] if d["last"] < cs["low"]
+        cs["high"] = d["last"] if d["last"] > cs["high"]
       end
 
       # Calculate the average of the averages
