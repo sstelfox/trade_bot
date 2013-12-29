@@ -1,16 +1,12 @@
 
 # Ruby core
 require 'uri'
+require 'json'
 
 # Gems
 require 'celluloid'
 require 'celluloid/io'
 require 'celluloid/redis'
-
-# Local requires
-require 'trade_bot/actors'
-require 'trade_bot/helpers'
-require 'trade_bot/version'
 
 # We don't need no objects let the mother **** burn
 JSON.create_id = nil
@@ -21,4 +17,9 @@ module TradeBot
     ::Redis.new(url: redis_url, driver: :celluloid)
   end
 end
+
+# Local requires
+require 'trade_bot/actors'
+require 'trade_bot/helpers'
+require 'trade_bot/version'
 

@@ -48,7 +48,7 @@ module TradeBot::Actors
 
     # Subscribe to the channels relevant to the bot and process being
     # processing it's messages.
-    def start
+    def process
       info('Subscribing to pubnub channels.')
 
       @pubnub.subscribe(
