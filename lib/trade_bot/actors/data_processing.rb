@@ -61,30 +61,7 @@ module TradeBot
         instaneous_value.each do |key, val|
           redis.hset('trading:current', key, val)
         end
-      end
-
-      # Setup the destination statistics key
-      base_key = 'trading:candlesticks'
-      start_key = (base_key + ':start')
-      current_key = (base_key + ':current')
-
-      # Build up the hour we'll be collecting stats for
-      current_time = Time.now.to_i
-      hour_start = Time.at(current_time - (current_time % 3600)).to_datetime
-
-      redis.pipelined do
-        # We don't want to make any changes if our start_key changes
-        redis.watch(start_key)
-        existing_time = redis.get(start_key)
-
-        if existing_time && (et = DateTime.parse(existing_time)) < hour_start
-          new_historical_set = base_key + et.strftime("%Y%m%d%H")
-          redis.rename(current_key, new_historical_set)
-          redis.zadd(base_key + ':sets', new_historical_set)
-          redis.set(start_key, hour_start.iso8601)
-
-          # TODO process new historical set into candlestick data
-        end
+        redis.zadd('trading:data', ticker['now'], JSON.generate(instaneous_value))
       end
 
       info(instaneous_value)
