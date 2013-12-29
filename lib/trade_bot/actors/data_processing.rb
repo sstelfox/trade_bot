@@ -8,6 +8,44 @@ module TradeBot
     include Celluloid
     include Celluloid::Logger
 
+    attr_reader :redis
+
+    # Build a candlestick data point from the provided source key, the start and
+    # end time.
+    #
+    # @param [String] source_key The redis key holding the zset that will be the
+    #   source of our data.
+    # @param [Fixnum] start_time
+    # @param [Fixnum] end_time
+    # @return [Hash<String => String>]
+    def build_candlestick(source_key, start_time, end_time)
+      data = redis.zrangebyscore(source_key, start_time, end_time)
+      data.map! { |d| JSON.parse(d) }
+
+      return if data.empty?
+
+      # Initialize the candlestick data
+      cs = {
+        "close"    => relevant[-1]["last"],
+        "high"     => relevant[0]["last"],
+        "interval" => (end_time - start_time),
+        "low"      => relevant[0]["last"],
+        "open"     => relevant[0]["last"],
+        "time"     => start_time
+      }
+
+      # Find the highs and lows for the period
+      data.each do |d|
+        cs["low"]  = d["low"]  if d["low"]  < cs["low"]
+        cs["high"] = d["high"] if d["high"] > cs["high"]
+      end
+
+      # Calculate the average of the averages
+      cs["avg"] = (data.map { |r| r["last"] }.inject(&:+)) / data.size
+
+      cs
+    end
+
     # Process messages received through the redis subscription.
     #
     # @param [String] msg
@@ -29,6 +67,8 @@ module TradeBot
     # Setup the data processing actor
     def initialize
       debug('Setting up the data processing actor.')
+
+      @redis_subscription = TradeBot.new_redis_instance
       @redis = TradeBot.new_redis_instance
     end
 
@@ -36,7 +76,7 @@ module TradeBot
     def process
       debug('Subscription to local redis stream for data processing.')
 
-      @redis.subscribe('pubnub:stream') do |on|
+      @redis_subscription.subscribe('pubnub:stream') do |on|
         on.message { |_, msg| handle_message(msg) }
       end
     end
@@ -55,15 +95,10 @@ module TradeBot
       useful_data
     end
 
-    def build_candlestick(source_key, start_time, end_time)
-    end
-
     # Process ticker messages we've received from the pubnub stream.
     #
     # @param [Hash<String => String>] ticker
     def update_ticker(ticker)
-      redis = TradeBot.new_redis_instance
-
       # Extract all the relevant values and store it in redis
       current = parse_raw(ticker)
       redis.zadd('trading:data', current['time'], JSON.generate(current))
@@ -74,58 +109,20 @@ module TradeBot
 
       # Either no data has been processed, or at least one minute has passed
       # and data needs to be processed.
-      last_minute_processed = redis.get('trading:processed:minutely')
-      if last_minute_processed.nil? || minute_start > last_minute_processed.to_i
-        # Figure out the time score of the first entry needing processing
-        start_value = last_minute_processed.to_i || 0
+      last_minute = (redis.get('trading:processed:minutely') || 0).to_i
+      if minute_start > last_minute
 
         # See if there are pending entries in need of processing
-        pending = redis.zrange("trading:data", start_value, 1, with_scores: true)
-        return if pending.empty?
-        time = pending[0][1]
+        #pending = redis.zrange("trading:data", start_value, 1, with_scores: true)
+        #return if pending.empty?
+        #time = pending[0][1]
 
-        # Loop through all the unprocessed data in minutely increments until we
-        # reach the current start of a minute.
-        while time <= minute_start
-          # Get the data for this minute
-          relevant = redis.zrangebyscore('trading:data', time, time + (60 * 1e6))
+        # Build the candlestick data for the minute periods we're in
+        #cs = build_candlestick('trading:data', period_start, period_end)
+        #redis.zadd('trading:candlestick:minutely', time, JSON.generate(cs))
+        #redis.set('trading:processed:minutely', period_end)
 
-          # If there isn't any data there is nothing to process
-          if relevant.size == 0
-            time += 60 * 1e6
-            next
-          end
-
-          # Parse the relevant data from it's JSON
-          relevant.map! { |d| JSON.parse(d) }
-
-          # Initialize the candlestick data with known values
-          candlestick = {
-            close: relevant[-1]["last"],
-            high:  relevant[0]["high"],
-            low:   relevant[0]["low"],
-            open:  relevant[0]["last"],
-            time:  time.to_i
-          }
-
-          # Find the highs and lows for the period
-          relevant.each do |d|
-            candlestick[:low] = d["low"]   if d["low"] < candlestick[:low]
-            candlestick[:high] = d["high"] if d["high"] < candlestick[:high]
-          end
-
-          # Calculate the average of the averages
-          candlestick[:avg] = (relevant.map { |r| r["avg"] }.inject(&:+)) / relevant.size
-          candlestick[:vol] = relevant.map { |r| r["vol"] }.inject(&:+)
-
-          time += 60 * 1e6
-
-          # We've just finished processing this minute
-          redis.zadd('trading:candlestick:minutely', time, JSON.generate(candlestick))
-          redis.set('trading:processed:minutely', time.to_i)
-
-          info(candlestick)
-        end
+        #info(cs)
       end
     end
 
