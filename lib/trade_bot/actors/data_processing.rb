@@ -26,11 +26,11 @@ module TradeBot
 
       # Initialize the candlestick data
       cs = {
-        "close"    => relevant[-1]["last"],
-        "high"     => relevant[0]["last"],
+        "close"    => data[-1]["last"],
+        "high"     => data[0]["last"],
         "interval" => (end_time - start_time),
-        "low"      => relevant[0]["last"],
-        "open"     => relevant[0]["last"],
+        "low"      => data[0]["last"],
+        "open"     => data[0]["last"],
         "time"     => start_time
       }
 
@@ -72,15 +72,6 @@ module TradeBot
       @redis = TradeBot.new_redis_instance
     end
 
-    # Begin procesing messages for statistical purposes
-    def process
-      debug('Subscription to local redis stream for data processing.')
-
-      @redis_subscription.subscribe('pubnub:stream') do |on|
-        on.message { |_, msg| handle_message(msg) }
-      end
-    end
-
     # Parse raw ticker information into only the metrics that are valuable to
     # us.
     #
@@ -95,6 +86,21 @@ module TradeBot
       useful_data
     end
 
+    # Begin procesing messages for statistical purposes
+    def process
+      debug('Subscription to local redis stream for data processing.')
+
+      @redis_subscription.subscribe('pubnub:stream') do |on|
+        on.message { |_, msg| handle_message(msg) }
+      end
+    end
+
+    def update_depth(depth)
+    end
+
+    def update_lag(lag)
+    end
+
     # Process ticker messages we've received from the pubnub stream.
     #
     # @param [Hash<String => String>] ticker
@@ -103,33 +109,28 @@ module TradeBot
       current = parse_raw(ticker)
       redis.zadd('trading:data', current['time'], JSON.generate(current))
 
-      # Check to see if we need to process this minute's worth of data
+      # We only want to process data up to the beginning of the current minute,
+      # we won't have the full minutes worth of data to process yet.
       cur_time = Time.now.to_i
-      minute_start = (Time.at(cur_time - (cur_time % 60))).to_i * 1e6
+      processing_end = (Time.at(cur_time - (cur_time % 60))).to_i * 1e6
 
       # Either no data has been processed, or at least one minute has passed
       # and data needs to be processed.
       last_minute = (redis.get('trading:processed:minutely') || 0).to_i
-      if minute_start > last_minute
+      while last_minute <= (processing_end - (60 * 1e6).to_i)
+        # Calculate period begin and end timestamps
+        period_start = (last_minute - (last_minute % (60 * 1e6))).to_i
+        period_end   = (period_start + (60 * 1e6)).to_i
 
-        # See if there are pending entries in need of processing
-        #pending = redis.zrange("trading:data", start_value, 1, with_scores: true)
-        #return if pending.empty?
-        #time = pending[0][1]
+        if redis.zcount('trading:data', period_start, period_end) > 0
+          cs = build_candlestick('trading:data', period_start, period_end)
+          redis.zadd('trading:candlestick:minutely', time, JSON.generate(cs))
+          info(cs)
+        end
 
-        # Build the candlestick data for the minute periods we're in
-        #cs = build_candlestick('trading:data', period_start, period_end)
-        #redis.zadd('trading:candlestick:minutely', time, JSON.generate(cs))
-        #redis.set('trading:processed:minutely', period_end)
-
-        #info(cs)
+        last_minute = period_end
+        redis.set('trading:processed:minutely', period_end)
       end
-    end
-
-    def update_depth(depth)
-    end
-
-    def update_lag(lag)
     end
   end
 end
