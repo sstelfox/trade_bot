@@ -3,8 +3,8 @@ require 'date'
 require 'net/https'
 require 'pubnub'
 
-module TradeBot
-  class DataProcessingActor
+module TradeBot::Actors
+  class DataProcessor
     include Celluloid
     include Celluloid::Logger
 

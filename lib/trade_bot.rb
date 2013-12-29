@@ -8,9 +8,8 @@ require 'celluloid/io'
 require 'celluloid/redis'
 
 # Local requires
-require 'trade_bot/actors/data_processing'
-require 'trade_bot/actors/ichimoku'
-require 'trade_bot/actors/pubnub'
+require 'trade_bot/actors'
+require 'trade_bot/helpers'
 require 'trade_bot/version'
 
 # We don't need no objects let the mother **** burn

@@ -6,12 +6,12 @@ $LOAD_PATH.unshift(base_path) unless $LOAD_PATH.include?(base_path)
 require 'trade_bot'
 
 # Setup our actors
-Celluloid::Actor[:incoming_data] = TradeBot::PubNubActor.new
-Celluloid::Actor[:ichimoku_bot]  = TradeBot::IchimokuActor.new('ichimoku')
-Celluloid::Actor[:processing]    = TradeBot::DataProcessingActor.new
+Celluloid::Actor[:data_processor] = TradeBot::Actors::DataProcessor.new
+Celluloid::Actor[:ichimoku]       = TradeBot::Actors::Ichimoku.new('ichimoku')
+Celluloid::Actor[:pub_nub]        = TradeBot::Actors::PubNub.new
 
-# Start receiving data
-Celluloid::Actor[:processing].async.process
-Celluloid::Actor[:incoming_data].start
+# Begin processing the data
+Celluloid::Actor[:data_processor].async.process
+Celluloid::Actor[:pub_nub].async.process
 
 loop { sleep 1 }

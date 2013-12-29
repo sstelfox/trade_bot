@@ -2,8 +2,8 @@
 require 'net/https'
 require 'pubnub'
 
-module TradeBot
-  class IchimokuActor
+module TradeBot::Actors
+  class Ichimoku
     include Celluloid
     include Celluloid::Logger
 

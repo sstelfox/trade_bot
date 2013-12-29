@@ -9,6 +9,21 @@ module TradeBot::Actors
 
     RELEVANT_CHANNELS = ['trade.lag', 'ticker.BTCUSD', 'depth.BTCUSD']
 
+    # Initialize pubnub actor and push all of our messages into redis for later
+    # processing.
+    def initialize
+      debug('Setting up pubnub actor.')
+
+      @channel_map = get_channels(RELEVANT_CHANNELS)
+      @pubnub = Pubnub.new(
+        logger: ::Logger.new('/dev/null'), # It's silly that the logger has to be disabled like this...
+        subscribe_key: 'sub-c-50d56e1e-2fd9-11e3-a041-02ee2ddab7fe',
+        ssl: false
+      )
+
+      @redis = TradeBot.new_redis_instance
+    end
+
     # Helper method to get the UUIDs of the streams we're interest in from the
     # MtGox API.
     #
@@ -31,24 +46,9 @@ module TradeBot::Actors
       error("Error handling message from pubnub: #{e.message}")
     end
 
-    # Initialize pubnub actor and push all of our messages into redis for later
-    # processing.
-    def initialize
-      debug('Setting up pubnub actor.')
-
-      @channel_map = get_channels(RELEVANT_CHANNELS)
-      @pubnub = Pubnub.new(
-        logger: ::Logger.new('/dev/null'), # It's silly that the logger has to be disabled like this...
-        subscribe_key: 'sub-c-50d56e1e-2fd9-11e3-a041-02ee2ddab7fe',
-        ssl: false
-      )
-
-      @redis = TradeBot.new_redis_instance
-    end
-
     # Subscribe to the channels relevant to the bot and process being
     # processing it's messages.
-    def process
+    def start
       info('Subscribing to pubnub channels.')
 
       @pubnub.subscribe(
