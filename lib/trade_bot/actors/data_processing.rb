@@ -97,7 +97,6 @@ module TradeBot
 
     # Update the various candlestick statistics.
     def update_candlesticks
-      debug("Updating candlesticks")
       check_candlestick(60)
       check_candlestick(15 * 60)
     end
@@ -140,7 +139,7 @@ module TradeBot
         info("Processing period from #{period_start} to #{period_end}")
 
         if redis.zcount('trading:data', period_start, period_end) > 0
-          debug("Processing a interval #{interval}s of data.")
+          debug("Processing a #{interval}s of data.")
           cs = build_candlestick('trading:data', period_start, period_end)
           redis.zadd("trading:candlestick:#{interval}", period_start, JSON.generate(cs))
         end
