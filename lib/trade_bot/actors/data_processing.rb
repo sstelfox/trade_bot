@@ -61,7 +61,7 @@ module TradeBot
         update_lag(data['lag'])
       end
     rescue => e
-      error("Error handling stream message: #{e.message}")
+      error("Error handling stream message: #{e.message}, #{e.backtrace.join("\n")}")
     end
 
     # Setup the data processing actor
@@ -129,6 +129,10 @@ module TradeBot
       # and data needs to be processed.
       last_interval = (redis.get("trading:processed:#{interval}") || 0).to_i
       while last_interval < processing_end
+        # We can skip a bunch of intervals by simply jumping to next item
+        next_item = redis.zrange('trading:data', last_interval, 1, with_scores: true)
+        last_interval = next_item[0][1].to_i unless next_item.empty?
+
         # Calculate period begin and end timestamps
         period_start = (last_interval - (last_interval % (interval * 1e6))).to_i
         period_end   = (period_start + (interval * 1e6)).to_i
@@ -144,7 +148,7 @@ module TradeBot
         info("Finished processing period.")
 
         last_interval = period_end
-        redis.set("trading:candlestick:#{interval}", period_end)
+        redis.set("trading:processed:#{interval}", period_end)
       end
     end
   end
