@@ -95,6 +95,12 @@ module TradeBot
       end
     end
 
+    # Update the various candlestick statistics.
+    def update_candlesticks
+      check_candlestick(60)
+      check_candlestick(15 * 60)
+    end
+
     def update_depth(depth)
     end
 
@@ -108,28 +114,32 @@ module TradeBot
       # Extract all the relevant values and store it in redis
       current = parse_raw(ticker)
       redis.zadd('trading:data', current['time'], JSON.generate(current))
+      update_candlesticks
+    end
 
-      # We only want to process data up to the beginning of the current minute,
-      # we won't have the full minutes worth of data to process yet.
+    #
+    def check_candlestick(interval)
+      # We only want to process data up to the beginning of the current
+      # interval, until the interval is complete we don't want to process it.
       cur_time = Time.now.to_i
-      processing_end = (Time.at(cur_time - (cur_time % 60))).to_i * 1e6
+      processing_end = (Time.at(cur_time - (cur_time % interval))).to_i * 1e6
 
       # Either no data has been processed, or at least one minute has passed
       # and data needs to be processed.
-      last_minute = (redis.get('trading:processed:minutely') || 0).to_i
-      while last_minute <= (processing_end - (60 * 1e6).to_i)
+      last_interval = (redis.get("trading:processed:#{interval}") || 0).to_i
+      while last_interval <= (processing_end - (interval * 1e6).to_i)
         # Calculate period begin and end timestamps
-        period_start = (last_minute - (last_minute % (60 * 1e6))).to_i
-        period_end   = (period_start + (60 * 1e6)).to_i
+        period_start = (last_interval - (last_interval % (interval * 1e6))).to_i
+        period_end   = (period_start + (interval * 1e6)).to_i
 
         if redis.zcount('trading:data', period_start, period_end) > 0
+          debug("Processing a interval #{interval}s of data.")
           cs = build_candlestick('trading:data', period_start, period_end)
-          redis.zadd('trading:candlestick:minutely', period_start, JSON.generate(cs))
-          info(cs)
+          redis.zadd("trading:candlestick:#{interval}", period_start, JSON.generate(cs))
         end
 
-        last_minute = period_end
-        redis.set('trading:processed:minutely', period_end)
+        last_interval = period_end
+        redis.set("trading:candlestick:#{interval}", period_end)
       end
     end
   end
