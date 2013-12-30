@@ -15,7 +15,7 @@ module TradeBot::Actors
       debug('Setting up the icimoku bot actor')
 
       @name = name.downcase.scan(/[a-z]/i).join
-      @redis = TradeBot.new_redis_instance
+      @redis = TradeBot.redis
 
       setup_bot(options.fetch(:usd_init, 0), options.fetch(:btc_init, 5))
     end

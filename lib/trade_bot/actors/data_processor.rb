@@ -74,8 +74,8 @@ module TradeBot::Actors
     def initialize
       debug('Setting up the data processing actor.')
 
-      @redis_subscription = TradeBot.new_redis_instance
-      @redis = TradeBot.new_redis_instance
+      @redis_subscription = TradeBot.redis
+      @redis = TradeBot.redis
     end
 
     # Parse raw ticker information into only the metrics that are valuable to

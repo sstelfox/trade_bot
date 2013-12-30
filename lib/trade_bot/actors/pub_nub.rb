@@ -21,7 +21,7 @@ module TradeBot::Actors
         ssl: false
       )
 
-      @redis = TradeBot.new_redis_instance
+      @redis = TradeBot.redis
     end
 
     # Helper method to get the UUIDs of the streams we're interest in from the
