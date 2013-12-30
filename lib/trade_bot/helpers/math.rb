@@ -142,6 +142,22 @@ module TradeBot::Helpers
 end
 
 =begin
+
+SAR(i) = SAR(i-1)+ACCELERATION*(EPRICE(i-1)-SAR(i-1))
+
+Where:
+
+SAR(i-1) — is the value of the indicator on the previous bar;
+ACCELERATION — is the acceleration factor;
+EPRICE(i-1) — is the highest (lowest) price for the previous period
+  (EPRICE=HIGH for long positions and EPRICE=LOW for short positions).
+
+The indicator value increases if the price of the current bar is higher than
+previous bullish and vice versa. The acceleration factor (ACCELERATION) will
+double at the same time, which would cause Parabolic SAR and the price to come
+together. In other words, the faster the price grows or sinks, the faster the
+indicator approaches the price.
+
 AF  = 0.02 # Acceleration factor
 Max = 0.2  # Max acceleration
 
