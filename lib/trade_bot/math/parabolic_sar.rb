@@ -63,30 +63,24 @@ module TradeBot::Math
 
       # Write the first SAR
       todayIdx = startIdx
-      newHigh  = inHigh[todayIdx - 1]
-      newLow   = inLow[todayIdx - 1]
 
-      ep, sar = (isLong == 1) ? [ inHigh[todayIdx], newLow ] : [ inLow[todayIdx], newHigh ]
+      ep, sar = (isLong == 1) ? [ inHigh[todayIdx], inLow[todayIdx - 1] ] : [ inLow[todayIdx], inHigh[todayIdx - 1] ]
 
       # Cheat on the newLow and newHigh for the first iteration
-      newLow = inLow[todayIdx]
-      newHigh = inHigh[todayIdx]
+      newLow, newHigh = inLow[todayIdx], inHigh[todayIdx]
 
       output = []
 
       while (todayIdx <= endIdx)
-        prevLow = newLow
-        prevHigh = newHigh
-        newLow = inLow[todayIdx]
-        newHigh = inHigh[todayIdx]
+        prevLow, prevHigh = newLow, newHigh
+        newLow, newHigh = inLow[todayIdx], inHigh[todayIdx]
         todayIdx += 1
 
         if isLong == 1
           # Switch to short if the low penetrates the SAR value
           if newLow <= sar
             # Switch and override the SAR with the ep
-            isLong = 0
-            sar = ep
+            isLong, sar = 0, ep
 
             # Make sure the override SAR is within yesterday's and today's range
             sar = prevHigh if sar < prevHigh
@@ -96,8 +90,7 @@ module TradeBot::Math
             output.push(sar)
 
             # Adjust af and ep
-            af = optInAcceleration
-            ep = newLow
+            af, ep = optInAcceleration, newLow
 
             # Calculate the new SAR
             sar = sar + (af * (ep - sar))
@@ -127,8 +120,7 @@ module TradeBot::Math
           # Switch to long if the high penetrates the SAR value
           if newHigh >= sar
             # Switch and override the SAR with the ep
-            isLong = 1
-            sar = ep
+            isLong, sar = 1, ep
 
             # Make sure the override SAR is within yesterday's and today's range
             sar = prevLow if sar > prevLow
@@ -138,8 +130,7 @@ module TradeBot::Math
             output.push(sar)
 
             # Adjust af and ep
-            af = optInAcceleration
-            ep = newHigh
+            af, ep = optInAcceleration, newHigh
 
             # Calculate the new SAR
             sar = sar + (af * (ep - sar))
