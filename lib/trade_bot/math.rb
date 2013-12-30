@@ -1,5 +1,6 @@
 
-require 'trade_bot/helpers/math'
+require 'trade_bot/math/polynomial'
+require 'trade_bot/math/parabolic_sar'
 
-module TradeBot::Helpers
+module TradeBot::Math
 end
