@@ -41,7 +41,6 @@ module TradeBot::Math
   def psar(inHigh, inLow, startIdx, endIdx, optInAcceleration = 0.02, optInMaximum = 0.2)
     # Temporary stand in variables, only initialized here to ease the porting of
     # the C code.
-    isLong, todayIdx, outIdx = [nil] * 3
     newHigh, newLow, prevHigh, prevLow = [nil] * 4
     ep, sar = [nil] * 2
 
@@ -60,7 +59,26 @@ module TradeBot::Math
     optInAcceleration = optInMaximum if (optInAcceleration > optInMaximum)
     af = optInAcceleration
 
-    # Identify if the initial direction is long or short.
+    # Identify if the initial direction is long or short. The next three lines
+    # are a compressed form of the relevant lines of code from TA_MINUS_DM
+    plus_delta  = inHigh[startIdx] - inHigh[startIdx-1] # Plus Delta
+    minus_delta = inLow[startIdx-1] - inLow[startIdx]   # Minus Delta
+    ep_temp = (minus_delta > 0 && plus_delta < minus_delta) ? minus_delta : 0
+    isLong = (ep_temp > 0 ? 0 : 1)
+
+    # Write the first SAR
+    outIdx   = 0
+    todayIdx = startIdx
+    newHigh  = inHigh[todayIdx - 1]
+    newLow   = inLow[todayIdx - 1]
+
+    if isLong == 1
+      ep = inHigh[todayIdx]
+      sar = newLow
+    else
+      ep = inLow[todayIdx]
+      sar = newHigh
+    end
   end
 
   module_function :psar
