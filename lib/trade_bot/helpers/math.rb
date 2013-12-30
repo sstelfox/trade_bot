@@ -166,12 +166,12 @@ high  = data.map { |d| d["high"]  }
 low   = data.map { |d| d["low"]   }
 psar  = data.map { |d| d["psar"]  }
 
-long = true        # Assume long for initial conditions
-af = AF            # Init acelleration factor
-ep = low[0]        # Init extreme point
+long    = true     # Assume long for initial conditions
+af      = AF       # Init acelleration factor
+ep      = low[0]   # Init extreme point
 psar[0] = close[0] # Initialize
-hp = high[0]
-lp = low[0]
+hp      = high[0]
+lp      = low[0]
 
 close.each_with_index do |cls, idx|
   if long
