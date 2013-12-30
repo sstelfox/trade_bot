@@ -11,14 +11,14 @@ task :environment do
   require 'trade_bot'
 end
 
-#description "Open a console with all of the code preloaded"
+desc "Open a console with all of the code preloaded"
 task :console => :environment do
   require 'pry'
   pry
 end
 
 namespace :reset do
-  #description "Clear all the generated statitics (source data will be left alone)"
+  desc "Clear all the generated statitics (source data will be left alone)"
   task :stats => :environment do
     redis = TradeBot.redis
 
