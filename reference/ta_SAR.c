@@ -72,65 +72,6 @@ TA_LIB_API TA_RetCode TA_SAR(int startIdx, int endIdx,
 
   ARRAY_LOCAL(ep_temp,1);
 
-#ifndef TA_FUNC_NO_RANGE_CHECK
-  /* Validate the requested output range. */
-  if( startIdx < 0 )
-    return ENUM_VALUE(RetCode,TA_OUT_OF_RANGE_START_INDEX,OutOfRangeStartIndex);
-  if( (endIdx < 0) || (endIdx < startIdx))
-    return ENUM_VALUE(RetCode,TA_OUT_OF_RANGE_END_INDEX,OutOfRangeEndIndex);
-
-  if( optInAcceleration == TA_REAL_DEFAULT )
-    optInAcceleration = 2.000000e-2;
-  else if( (optInAcceleration < 0.000000e+0) || (optInAcceleration > 3.000000e+37) )
-    return ENUM_VALUE(RetCode,TA_BAD_PARAM,BadParam);
-
-  if( optInMaximum == TA_REAL_DEFAULT )
-    optInMaximum = 2.000000e-1;
-  else if( (optInMaximum < 0.000000e+0) || (optInMaximum > 3.000000e+37) )
-    return ENUM_VALUE(RetCode,TA_BAD_PARAM,BadParam);
-#endif
-
-  /* Implementation of the SAR has been a little bit open to interpretation
-   * since Wilder (the original author) did not define a precise algorithm
-   * on how to bootstrap the algorithm. Take any existing software application
-   * and you will see slight variation on how the algorithm was adapted.
-   *
-   * What is the initial trade direction? Long or short?
-   * ===================================================
-   * The interpretation of what should be the initial SAR values is
-   * open to interpretation, particularly since the caller to the function
-   * does not specify the initial direction of the trade.
-   *
-   * In TA-Lib, the following logic is used:
-   *  - Calculate +DM and -DM between the first and
-   *    second bar. The highest directional indication will
-   *    indicate the assumed direction of the trade for the second
-   *    price bar. 
-   *  - In the case of a tie between +DM and -DM,
-   *    the direction is LONG by default.
-   *
-   * What is the initial "extreme point" and thus SAR?
-   * =================================================
-   * The following shows how different people took different approach:
-   *  - Metastock use the first price bar high/low depending of
-   *    the direction. No SAR is calculated for the first price
-   *    bar.
-   *  - Tradestation use the closing price of the second bar. No
-   *    SAR are calculated for the first price bar.
-   *  - Wilder (the original author) use the SIP from the
-   *    previous trade (cannot be implement here since the
-   *    direction and length of the previous trade is unknonw).
-   *  - The Magazine TASC seems to follow Wilder approach which
-   *    is not practical here.
-   *
-   * TA-Lib "consume" the first price bar and use its high/low as the
-   * initial SAR of the second price bar. I found that approach to be
-   * the closest to Wilders idea of having the first entry day use
-   * the previous extreme point, except that here the extreme point is
-   * derived solely from the first price bar. I found the same approach
-   * to be used by Metastock.
-   */
-
   /*
    * Identify the minimum number of price bar needed to calculate at least one
    * output.
