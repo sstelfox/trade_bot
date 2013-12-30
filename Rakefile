@@ -11,7 +11,26 @@ task :environment do
   require 'trade_bot'
 end
 
+#description "Open a console with all of the code preloaded"
 task :console => :environment do
   require 'pry'
   pry
+end
+
+namespace :reset do
+  #description "Clear all the generated statitics (source data will be left alone)"
+  task :stats => :environment do
+    redis = TradeBot.redis
+
+    redis.multi do
+      redis.del('trading:processed:60')
+      redis.del('trading:candlestick:60')
+      redis.del('trading:processed:900')
+      redis.del('trading:candlestick:900')
+      redis.del('trading:processed:3600')
+      redis.del('trading:candlestick:3600')
+      redis.del('trading:processed:86400')
+      redis.del('trading:candlestick:86400')
+    end
+  end
 end
