@@ -31,7 +31,13 @@ module TradeBot::Actors
         "interval" => (end_time - start_time),
         "low"      => data[0]["last"],
         "open"     => data[0]["last"],
-        "time"     => start_time
+        "time"     => start_time,
+        # Close but not technically accurate as the initial value will include
+        # the trade volume for that initial value. To do this accurately we'd
+        # have to get the closing volume of the previous iteration. Until I
+        # have an easy means to support this I will consider this accurate
+        # enough for my purposes.
+        "vol"      => data[-1]["vol"] - data[0]["vol"]
       }
 
       # Find the highs and lows for the period
