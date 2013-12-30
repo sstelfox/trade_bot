@@ -39,13 +39,8 @@ module TradeBot::Math
   # the first price bar.
   #
   def psar(inHigh, inLow, startIdx, endIdx, optInAcceleration = 0.02, optInMaximum = 0.2)
-    # Temporary stand in variables, only initialized here to ease the porting of
-    # the C code.
-    newHigh, newLow, prevHigh, prevLow = [nil] * 4
-    ep, sar = [nil] * 2
-
     raise "Variable out of range" if optInAcceleration < 0 || optInMaximum < 0
-    raise "Index out of range" if startIdx < 0 || endIdx < 0 || endIdx < startIdx
+    raise "Index out of range"    if startIdx < 0 || endIdx < 0 || endIdx < startIdx
 
     # Move up the start index if it's 0 to allow a historical value to
     # bootstrap the algorithm.
@@ -66,8 +61,10 @@ module TradeBot::Math
     ep_temp = (minus_delta > 0 && plus_delta < minus_delta) ? minus_delta : 0
     isLong = (ep_temp > 0 ? 0 : 1)
 
-    # Write the first SAR
     outIdx   = 0
+    outReal  = []
+
+    # Write the first SAR
     todayIdx = startIdx
     newHigh  = inHigh[todayIdx - 1]
     newLow   = inLow[todayIdx - 1]
@@ -79,6 +76,112 @@ module TradeBot::Math
       ep = inLow[todayIdx]
       sar = newHigh
     end
+
+    # Cheat on the newLow and newHigh for the first iteration
+    newLow = inLow[todayIdx]
+    newHigh = inHigh[todayIdx]
+
+    while (todayIdx <= endIdx)
+      prevLow = newLow
+      prevHigh = newHigh
+      newLow = inLow[todayIdx]
+      newHigh = inHigh[todayIdx]
+      todayIdx += 1
+
+      if isLong == 1
+        # Switch to short if the low penetrates the SAR value
+        if newLow <= sar
+          # Switch and override the SAR with the ep
+          isLong = 0
+          sar = ep
+
+          # Make sure the override SAR is within yesterday's and today's range
+          sar = prevHigh if sar < prevHigh
+          sar = newHigh  if sar < newHigh
+
+          # Output the override SAR
+          outReal[outIdx] = sar
+          outIdx += 1
+
+          # Adjust af and ep
+          af = optInAcceleration
+          ep = newLow
+
+          # Calculate the new SAR
+          sar = sar + (af * (ep - sar))
+
+          # Make sure the new SAR is within yesterday's and today's range
+          sar = prevHigh if sar < prevHigh
+          sar = newHigh  if sar < newHigh
+        else
+          # Output the SAR value calculated in the previous step
+          outReal[outIdx] = sar
+          outIdx += 1
+
+          # Adjust af and ep
+          if newHigh > ep
+            ep = newHigh
+            af += optInAcceleration
+            af = optInMaximum if af > optInMaximum
+          end
+
+          # Calculate the new SAR
+          sar = sar + (af * (ep - sar))
+
+          # Make sure the new SAR is within yesterday's and today's range
+          sar = prevLow if sar > prevLow
+          sar = newLow  if sar > newLow
+        end
+      else
+        # Switch to long if the high penetrates the SAR value
+        if newHigh >= sar
+          # Switch and override the SAR with the ep
+          isLong = 1
+          sar = ep
+
+          # Make sure the override SAR is within yesterday's and today's range
+          sar = prevLow if sar > prevLow
+          sar = newLow  if sar > newLow
+
+          # Output the SAR value calculated in the previous step
+          outReal[outIdx] = sar
+          outIdx += 1
+
+          # Adjust af and ep
+          af = optInAcceleration
+          ep = newHigh
+
+          # Calculate the new SAR
+          sar = sar + (af * (ep - sar))
+
+          # Make sure the new SAR is within yesterday's and today's range
+          sar = prevLow if sar > prevLow
+          sar = newLow  if sar > newLow
+        else
+          # No switch necessary
+
+          # Output the SAR (was calculated in the previous iteration)
+          outReal[outIdx] = sar
+          outIdx += 1
+
+          # Adjust af and ep
+          if newLow < ep
+            ep = newLow
+            af += optInAcceleration
+            af = optInAcceleration if af > optInMaximum
+          end
+
+          # Calculate the new SAR
+          sar = sar + (af * (ep - sar))
+
+          # Make sure the new SAR is within yesterday's and today's range
+          sar = prevHigh if sar < prevHigh
+          sar = newHigh  if sar < newHigh
+        end
+      end
+    end
+
+    outReal
   end
 
   module_function :psar
