@@ -58,8 +58,8 @@ module TradeBot::Helpers
       end
 
       # WOOOOOooooooooOOooo
-      keys = high_ex.keys
-      high_ex  = high_ex.values
+      keys    = high_ex.keys
+      high_ex = high_ex.values
       low_ex  = low_ex.values
 
       # Initialize the trend to whatever
