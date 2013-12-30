@@ -20,6 +20,7 @@ end
 
 # Local requires
 require 'trade_bot/actors'
+require 'trade_bot/ichimoku'
 require 'trade_bot/math'
 require 'trade_bot/version'
 
