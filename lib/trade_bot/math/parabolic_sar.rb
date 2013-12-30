@@ -37,146 +37,148 @@ module TradeBot::Math
   # closest to Wilders idea of having the first entry day use the previous
   # extreme point, except that here the extreme point is derived solely from
   # the first price bar.
-  #
-  def psar(inHigh, inLow, startIdx, endIdx, optInAcceleration = 0.02, optInMaximum = 0.2)
-    raise "Variable out of range" if optInAcceleration < 0 || optInMaximum < 0
-    raise "Index out of range"    if startIdx < 0 || endIdx < 0 || endIdx < startIdx
+  module ParabolicSAR
+    def calculate(inHigh, inLow, startIdx, endIdx, optInAcceleration = 0.02, optInMaximum = 0.2)
+      raise "Variable out of range" if optInAcceleration < 0 || optInMaximum < 0
+      raise "Index out of range"    if startIdx < 0 || endIdx < 0 || endIdx < startIdx
 
-    # Move up the start index if it's 0 to allow a historical value to
-    # bootstrap the algorithm.
-    startIdx = 1 if startIdx < 1
+      # Move up the start index if it's 0 to allow a historical value to
+      # bootstrap the algorithm.
+      startIdx = 1 if startIdx < 1
 
-    # Make sure there is still something to evaluate
-    raise "Not enough data" if startIdx > endIdx
+      # Make sure there is still something to evaluate
+      raise "Not enough data" if startIdx > endIdx
 
-    # Make sure the acceleration and maximum are coherent. If not, correct the
-    # acceleration.
-    optInAcceleration = optInMaximum if (optInAcceleration > optInMaximum)
-    af = optInAcceleration
+      # Make sure the acceleration and maximum are coherent. If not, correct the
+      # acceleration.
+      optInAcceleration = optInMaximum if (optInAcceleration > optInMaximum)
+      af = optInAcceleration
 
-    # Identify if the initial direction is long or short. The next three lines
-    # are a compressed form of the relevant lines of code from TA_MINUS_DM
-    plus_delta  = inHigh[startIdx] - inHigh[startIdx-1] # Plus Delta
-    minus_delta = inLow[startIdx-1] - inLow[startIdx]   # Minus Delta
-    ep_temp = (minus_delta > 0 && plus_delta < minus_delta) ? minus_delta : 0
-    isLong = (ep_temp > 0 ? 0 : 1)
+      # Identify if the initial direction is long or short. The next three lines
+      # are a compressed form of the relevant lines of code from TA_MINUS_DM
+      plus_delta  = inHigh[startIdx] - inHigh[startIdx-1] # Plus Delta
+      minus_delta = inLow[startIdx-1] - inLow[startIdx]   # Minus Delta
+      ep_temp = (minus_delta > 0 && plus_delta < minus_delta) ? minus_delta : 0
+      isLong = (ep_temp > 0 ? 0 : 1)
 
-    # Write the first SAR
-    todayIdx = startIdx
-    newHigh  = inHigh[todayIdx - 1]
-    newLow   = inLow[todayIdx - 1]
+      # Write the first SAR
+      todayIdx = startIdx
+      newHigh  = inHigh[todayIdx - 1]
+      newLow   = inLow[todayIdx - 1]
 
-    if isLong == 1
-      ep = inHigh[todayIdx]
-      sar = newLow
-    else
-      ep = inLow[todayIdx]
-      sar = newHigh
-    end
+      ep, sar = (isLong == 1) ? [ inHigh[todayIdx], newLow ] : [ inLow[todayIdx], newHigh ]
 
-    # Cheat on the newLow and newHigh for the first iteration
-    newLow = inLow[todayIdx]
-    newHigh = inHigh[todayIdx]
-
-    output = []
-
-    while (todayIdx <= endIdx)
-      prevLow = newLow
-      prevHigh = newHigh
+      # Cheat on the newLow and newHigh for the first iteration
       newLow = inLow[todayIdx]
       newHigh = inHigh[todayIdx]
-      todayIdx += 1
 
-      if isLong == 1
-        # Switch to short if the low penetrates the SAR value
-        if newLow <= sar
-          # Switch and override the SAR with the ep
-          isLong = 0
-          sar = ep
+      output = []
 
-          # Make sure the override SAR is within yesterday's and today's range
-          sar = prevHigh if sar < prevHigh
-          sar = newHigh  if sar < newHigh
+      while (todayIdx <= endIdx)
+        prevLow = newLow
+        prevHigh = newHigh
+        newLow = inLow[todayIdx]
+        newHigh = inHigh[todayIdx]
+        todayIdx += 1
 
-          # Output the override SAR
-          output.push(sar)
+        if isLong == 1
+          # Switch to short if the low penetrates the SAR value
+          if newLow <= sar
+            # Switch and override the SAR with the ep
+            isLong = 0
+            sar = ep
 
-          # Adjust af and ep
-          af = optInAcceleration
-          ep = newLow
+            # Make sure the override SAR is within yesterday's and today's range
+            sar = prevHigh if sar < prevHigh
+            sar = newHigh  if sar < newHigh
 
-          # Calculate the new SAR
-          sar = sar + (af * (ep - sar))
+            # Output the override SAR
+            output.push(sar)
 
-          # Make sure the new SAR is within yesterday's and today's range
-          sar = prevHigh if sar < prevHigh
-          sar = newHigh  if sar < newHigh
-        else
-          # Output the SAR value calculated in the previous step
-          output.push(sar)
-
-          # Adjust af and ep
-          if newHigh > ep
-            ep = newHigh
-            af += optInAcceleration
-            af = optInMaximum if af > optInMaximum
-          end
-
-          # Calculate the new SAR
-          sar = sar + (af * (ep - sar))
-
-          # Make sure the new SAR is within yesterday's and today's range
-          sar = prevLow if sar > prevLow
-          sar = newLow  if sar > newLow
-        end
-      else
-        # Switch to long if the high penetrates the SAR value
-        if newHigh >= sar
-          # Switch and override the SAR with the ep
-          isLong = 1
-          sar = ep
-
-          # Make sure the override SAR is within yesterday's and today's range
-          sar = prevLow if sar > prevLow
-          sar = newLow  if sar > newLow
-
-          # Output the SAR value calculated in the previous step
-          output.push(sar)
-
-          # Adjust af and ep
-          af = optInAcceleration
-          ep = newHigh
-
-          # Calculate the new SAR
-          sar = sar + (af * (ep - sar))
-
-          # Make sure the new SAR is within yesterday's and today's range
-          sar = prevLow if sar > prevLow
-          sar = newLow  if sar > newLow
-        else
-          # No switch necessary
-
-          # Output the SAR (was calculated in the previous iteration)
-          output.push(sar)
-
-          # Adjust af and ep
-          if newLow < ep
+            # Adjust af and ep
+            af = optInAcceleration
             ep = newLow
-            af += optInAcceleration
-            af = optInAcceleration if af > optInMaximum
+
+            # Calculate the new SAR
+            sar = sar + (af * (ep - sar))
+
+            # Make sure the new SAR is within yesterday's and today's range
+            sar = prevHigh if sar < prevHigh
+            sar = newHigh  if sar < newHigh
+          else
+            # Output the SAR value calculated in the previous step
+            output.push(sar)
+
+            # Adjust af and ep
+            if newHigh > ep
+              ep = newHigh
+              af += optInAcceleration
+              af = optInMaximum if af > optInMaximum
+            end
+
+            # Calculate the new SAR
+            sar = sar + (af * (ep - sar))
+
+            # Make sure the new SAR is within yesterday's and today's range
+            sar = prevLow if sar > prevLow
+            sar = newLow  if sar > newLow
           end
+        else
+          # Switch to long if the high penetrates the SAR value
+          if newHigh >= sar
+            # Switch and override the SAR with the ep
+            isLong = 1
+            sar = ep
 
-          # Calculate the new SAR
-          sar = sar + (af * (ep - sar))
+            # Make sure the override SAR is within yesterday's and today's range
+            sar = prevLow if sar > prevLow
+            sar = newLow  if sar > newLow
 
-          # Make sure the new SAR is within yesterday's and today's range
-          sar = prevHigh if sar < prevHigh
-          sar = newHigh  if sar < newHigh
+            # Output the SAR value calculated in the previous step
+            output.push(sar)
+
+            # Adjust af and ep
+            af = optInAcceleration
+            ep = newHigh
+
+            # Calculate the new SAR
+            sar = sar + (af * (ep - sar))
+
+            # Make sure the new SAR is within yesterday's and today's range
+            sar = prevLow if sar > prevLow
+            sar = newLow  if sar > newLow
+          else
+            # No switch necessary
+
+            # Output the SAR (was calculated in the previous iteration)
+            output.push(sar)
+
+            # Adjust af and ep
+            if newLow < ep
+              ep = newLow
+              af += optInAcceleration
+              af = optInAcceleration if af > optInMaximum
+            end
+
+            # Calculate the new SAR
+            sar = sar + (af * (ep - sar))
+
+            # Make sure the new SAR is within yesterday's and today's range
+            sar = prevHigh if sar < prevHigh
+            sar = newHigh  if sar < newHigh
+          end
         end
       end
+
+      output
     end
 
-    output
+    module_function :calculate
+  end
+
+  # A helper function to access the ParabolicSAR functions easier to access
+  def psar(*args)
+    ParabolicSAR.calculate(*args)
   end
 
   module_function :psar
