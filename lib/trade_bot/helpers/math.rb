@@ -141,4 +141,73 @@ module TradeBot::Helpers
   end
 end
 
+=begin
+AF  = 0.02 # Acceleration factor
+Max = 0.2  # Max acceleration
+
+close = data.map { |d| d["close"] }
+high  = data.map { |d| d["high"]  }
+low   = data.map { |d| d["low"]   }
+psar  = data.map { |d| d["psar"]  }
+
+long = true        # Assume long for initial conditions
+af = AF            # Init acelleration factor
+ep = low[0]        # Init extreme point
+psar[0] = close[0] # Initialize
+hp = high[0]
+lp = low[0]
+
+close.each_with_index do |cls, idx|
+  if long
+    psar[idx] = psar[idx - 1] + af * (hp - psar[idx - 1])
+  else
+    psar[idx] = psar[idx - 1] + af * (lp - psar[idx - 1])
+  end
+
+  reverse = 0
+
+  # Check for reversal
+  if long
+    if (low[idx] < psar[idx])
+      # Reverse position to short
+      long = false
+      reverse = 1
+
+      psar[idx] = hp # SAR is high point in prev trade
+      lp = low[idx]
+      af = AF
+    end
+  else
+    if (high[idx] > psar[idx])
+      # Reverse position to long
+      long = true
+      reverse = 1
+
+      psar[idx] = lp
+      hp = high[idx]
+      af = AF
+    end
+  end
+
+  if (reverse == 0)
+    if long
+      if (high[idx] > hp)
+        hp = high[idx]
+        af += AF
+        af = [af, Max].min
+      end
+
+      psar[idx] = [psar[idx], low[idx - 1], low[idx - 2]].min
+    else
+      if (low[idx] < lp)
+         lp = low[idx]
+         af = af + AF
+         af = [af, Max].min
+      end
+
+      psar[idx] = [psar[idx], high[idx - 1], high[idx - 2]].max
+    end
+  end
+end
+=end
 
