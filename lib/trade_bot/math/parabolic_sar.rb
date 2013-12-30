@@ -61,8 +61,7 @@ module TradeBot::Math
     ep_temp = (minus_delta > 0 && plus_delta < minus_delta) ? minus_delta : 0
     isLong = (ep_temp > 0 ? 0 : 1)
 
-    outIdx   = 0
-    outReal  = []
+    output = []
 
     # Write the first SAR
     todayIdx = startIdx
@@ -100,8 +99,7 @@ module TradeBot::Math
           sar = newHigh  if sar < newHigh
 
           # Output the override SAR
-          outReal[outIdx] = sar
-          outIdx += 1
+          output.push(sar)
 
           # Adjust af and ep
           af = optInAcceleration
@@ -115,8 +113,7 @@ module TradeBot::Math
           sar = newHigh  if sar < newHigh
         else
           # Output the SAR value calculated in the previous step
-          outReal[outIdx] = sar
-          outIdx += 1
+          output.push(sar)
 
           # Adjust af and ep
           if newHigh > ep
@@ -144,8 +141,7 @@ module TradeBot::Math
           sar = newLow  if sar > newLow
 
           # Output the SAR value calculated in the previous step
-          outReal[outIdx] = sar
-          outIdx += 1
+          output.push(sar)
 
           # Adjust af and ep
           af = optInAcceleration
@@ -161,8 +157,7 @@ module TradeBot::Math
           # No switch necessary
 
           # Output the SAR (was calculated in the previous iteration)
-          outReal[outIdx] = sar
-          outIdx += 1
+          output.push(sar)
 
           # Adjust af and ep
           if newLow < ep
@@ -181,7 +176,7 @@ module TradeBot::Math
       end
     end
 
-    outReal
+    output
   end
 
   module_function :psar
