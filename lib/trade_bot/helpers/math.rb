@@ -32,50 +32,47 @@ module TradeBot::Helpers
 
     # Computes the Parabolic SAR
     #
-    # @param [Hash] his Extreme Points: The highest high
-    # @param [Hash] los Extreme Points: The lowest low
-    # @param [Float] afInc Acceleration Factor Increment, for each time point Lower
-    #   increment = less sensitive (indicitive)
-    # @param [Float] afMax Acceleration Factor Max, rno matter how long the trend
-    #   Lower max step = less sensitive (reactive)
-    # @param [Boolean] withDir Indicates if trend direction should be returned.
-    # @return [Array] If $withDir is true, result is tuple of length 2. Tuple
-    #   contains ( array of SAR values, array of trend direction ) Else if $withDir
-    #   is false, result is simply an array of SAR values.
-    def parabolicSAR(his, los, afInc = 0.02, afMax = 0.20, withDir = false)
+    # @param [Hash] high_ex Extreme Points: The highest high
+    # @param [Hash] low_ex Extreme Points: The lowest low
+    # @param [Float] af_inc Acceleration Factor Increment, for each time point
+    #   lower increment = less sensitive (indicitive)
+    # @param [Float] af_max Acceleration Factor Max, rno matter how long the
+    #   trend Lower max step = less sensitive (reactive)
+    # @return [Array] An array of SAR values.
+    def parabolicSAR(high_ex, low_ex, af_inc = 0.02, af_max = 0.20)
       # Initial validation
-      unless (his.is_a?(Hash) && los.is_a?(Hash))
+      unless (high_ex.is_a?(Hash) && low_ex.is_a?(Hash))
         raise "First 2 parameters must be hashes"
-        return withDir ? [false, false] : false
+        return false
       end
 
       # More validation
-      unless his.size == los.size
+      unless high_ex.size == low_ex.size
         raise "Arrays must be equal length"
-        return withDir ? [false, false] : false
+        return false
       end
 
       # Dunno what this validation does...
-      if his.size < 2
-        return withDir ? [[], []] : []
+      if high_ex.size < 2
+        return []
       end
 
       # WOOOOOooooooooOOooo
-      keys = his.keys
-      his  = his.values
-      los  = los.values
+      keys = high_ex.keys
+      high_ex  = high_ex.values
+      low_ex  = low_ex.values
 
       # Initialize the trend to whatever
-      trend = (his[1] >= his[0] || los[0] <= los[1]) ? 1 : -1
+      trend = (high_ex[1] >= high_ex[0] || low_ex[0] <= low_ex[1]) ? 1 : -1
 
       # Previous SAR: Use first data point's extreme value, depending on trend
-      pSAR = (trent > 0) ? los[0] : his[0]
+      pSAR = (trent > 0) ? low_ex[0] : high_ex[0]
 
       # Extreme point: Highest during uptrend, lowest during downtrend
-      ep = (trend > 0) ? los[0] : his[0]
+      ep = (trend > 0) ? low_ex[0] : high_ex[0]
 
       # Acceleration factor
-      af = afInc
+      af = af_inc
 
       # Initialize results based on trend guess
       r = { keys[0] => pSAR  } # SAR results
@@ -88,45 +85,45 @@ module TradeBot::Helpers
           # Uptrend
 
           # Making higher highs: accelerate
-          if (his[i] > ep)
-            ep = his[i]
-            af = [afMax, af+afInc].min
+          if (high_ex[i] > ep)
+            ep = high_ex[i]
+            af = [af_max, af+af_inc].min
           end
 
           # Tomorrow's SAR based on today's action
           nSAR = pSAR + af * (ep - pSAR)
 
           # Rule: SAR can never be above prior period's low or the current low
-          nSAR = (i > 0) ? [los[i], los[i - 1], nSAR].min : [los[i], nSAR].min
+          nSAR = (i > 0) ? [low_ex[i], low_ex[i - 1], nSAR].min : [low_ex[i], nSAR].min
 
           # Rule: If SAR crosses tomorrow's price range, the trend switches.
           if (nSAR > log[i + 1])
             trend = -1
-            nSAR = ep       # Set to the last ep recorded on the previous trend
-            ep = los[i + 1] # Reset accordingly to this period's maximum
-            af = afInc      # Reset to its initial value of 0.02
+            nSAR = ep          # Set to the last ep recorded on the previous trend
+            ep = low_ex[i + 1] # Reset accordingly to this period's maximum
+            af = af_inc        # Reset to its initial value of 0.02
           end
         else
           # Downtrend
 
           # Making lower lows: accelerate
-          if (los[i] < ep)
-            ep = los[i]
-            af = [afMax, af + afInc].min
+          if (low_ex[i] < ep)
+            ep = low_ex[i]
+            af = [af_max, af + af_inc].min
           end
 
           # Tomorrow's SAR based on today's price action
           nSAR = pSAR + af * (ep - pSAR)
 
           # Rule: SAR can never be below prior period's highs or the current high
-          nSAR = (i > 0) ? [his[i], his[i - 1], nSAR].min : [his[i], nSAR].max
+          nSAR = (i > 0) ? [high_ex[i], high_ex[i - 1], nSAR].min : [high_ex[i], nSAR].max
 
           # Rule: If SAR crosses tomorrow's price range, the trend switches
-          if (nSAR < his[i + 1])
+          if (nSAR < high_ex[i + 1])
             trend = 1
-            nSAR = ep       # Set the last ep recorded on the previous trend
-            ep = his[i + 1] # Reset accordingly to this period's maximum
-            af = afInc      # Reset to its initial value of 0.02
+            nSAR = ep           # Set the last ep recorded on the previous trend
+            ep = high_ex[i + 1] # Reset accordingly to this period's maximum
+            af = af_inc         # Reset to its initial value of 0.02
           end
         end
 
@@ -137,7 +134,7 @@ module TradeBot::Helpers
         i += 1
       end
 
-      (withDir ? [r, d] : r)
+      r
     end
 
     module_function :parabolicSAR, :polynomial_fit
