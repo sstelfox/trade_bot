@@ -1,10 +1,3 @@
-/*
- * SAR_ROUNDING is just for test purpose when cross-referencing that
- * function with example from Wilder's book. Wilder is using two
- * decimal rounding for simplification. TA-Lib does not round.
- */
-/* #define SAR_ROUNDING(x) x=round_pos_2(x) */
-#define SAR_ROUNDING(x)
 
 #include <string.h>
 #include <math.h>
@@ -22,7 +15,7 @@
 #define INPUT_TYPE   double
 
 TA_LIB_API int TA_SAR_Lookback(double optInAcceleration, /* From 0 to TA_REAL_MAX */
-    double optInMaximum)  {   /* From 0 to TA_REAL_MAX */
+                               double optInMaximum) {    /* From 0 to TA_REAL_MAX */
 #ifndef TA_FUNC_NO_RANGE_CHECK
   if( optInAcceleration == TA_REAL_DEFAULT )
     optInAcceleration = 2.000000e-2;
@@ -35,7 +28,6 @@ TA_LIB_API int TA_SAR_Lookback(double optInAcceleration, /* From 0 to TA_REAL_MA
     return -1;
 #endif
 
-  /* Insert lookback code here. */
   UNUSED_VARIABLE(optInAcceleration);
   UNUSED_VARIABLE(optInMaximum);
 
@@ -77,6 +69,7 @@ TA_LIB_API TA_RetCode TA_SAR(int startIdx, int endIdx,
 
   double newHigh, newLow, prevHigh, prevLow;
   double af, ep, sar;
+
   ARRAY_LOCAL(ep_temp,1);
 
 #ifndef TA_FUNC_NO_RANGE_CHECK
@@ -86,28 +79,16 @@ TA_LIB_API TA_RetCode TA_SAR(int startIdx, int endIdx,
   if( (endIdx < 0) || (endIdx < startIdx))
     return ENUM_VALUE(RetCode,TA_OUT_OF_RANGE_END_INDEX,OutOfRangeEndIndex);
 
-#if !defined(_JAVA)
-  /* Verify required price component. */
-  if(!inHigh||!inLow)
-    return ENUM_VALUE(RetCode,TA_BAD_PARAM,BadParam);
-
-#endif /* !defined(_JAVA)*/
   if( optInAcceleration == TA_REAL_DEFAULT )
     optInAcceleration = 2.000000e-2;
-  else if( (optInAcceleration < 0.000000e+0) ||/* Generated */  (optInAcceleration > 3.000000e+37) )
+  else if( (optInAcceleration < 0.000000e+0) || (optInAcceleration > 3.000000e+37) )
     return ENUM_VALUE(RetCode,TA_BAD_PARAM,BadParam);
 
   if( optInMaximum == TA_REAL_DEFAULT )
     optInMaximum = 2.000000e-1;
-  else if( (optInMaximum < 0.000000e+0) ||/* Generated */  (optInMaximum > 3.000000e+37) )
+  else if( (optInMaximum < 0.000000e+0) || (optInMaximum > 3.000000e+37) )
     return ENUM_VALUE(RetCode,TA_BAD_PARAM,BadParam);
-
-#if !defined(_JAVA)
-  if( !outReal )
-    return ENUM_VALUE(RetCode,TA_BAD_PARAM,BadParam);
-
-#endif /* !defined(_JAVA) */
-#endif /* TA_FUNC_NO_RANGE_CHECK */
+#endif
 
   /* Implementation of the SAR has been a little bit open to interpretation
    * since Wilder (the original author) did not define a precise algorithm
@@ -150,11 +131,11 @@ TA_LIB_API TA_RetCode TA_SAR(int startIdx, int endIdx,
    * to be used by Metastock.
    */
 
-  /* Identify the minimum number of price bar needed
-   * to calculate at least one output.
+  /*
+   * Identify the minimum number of price bar needed to calculate at least one
+   * output.
    *
-   * Move up the start index if there is not
-   * enough initial data.
+   * Move up the start index if there is not enough initial data.
    */
   if( startIdx < 1 )
     startIdx = 1;
@@ -166,20 +147,22 @@ TA_LIB_API TA_RetCode TA_SAR(int startIdx, int endIdx,
     return ENUM_VALUE(RetCode,TA_SUCCESS,Success);
   }
 
-  /* Make sure the acceleration and maximum are coherent.
-   * If not, correct the acceleration.
+  /*
+   * Make sure the acceleration and maximum are coherent. If not, correct the
+   * acceleration.
    */
   af = optInAcceleration;
   if( af > optInMaximum )
     af = optInAcceleration = optInMaximum;
 
-  /* Identify if the initial direction is long or short.
-   * (ep is just used as a temp buffer here, the name
-   *  of the parameter is not significant).
+  /*
+   * Identify if the initial direction is long or short. (ep is just used as a
+   * temp buffer here, the name of the parameter is not significant).
    */
   retCode = FUNCTION_CALL(MINUS_DM)( startIdx, startIdx, inHigh, inLow, 1,
       VALUE_HANDLE_OUT(tempInt), VALUE_HANDLE_OUT(tempInt),
       ep_temp );
+
   if( ep_temp[0] > 0 )
     isLong = 0;
   else
@@ -200,18 +183,13 @@ TA_LIB_API TA_RetCode TA_SAR(int startIdx, int endIdx,
   newHigh = inHigh[todayIdx-1];
   newLow  = inLow[todayIdx-1];
 
-  SAR_ROUNDING(newHigh);
-  SAR_ROUNDING(newLow);
-
-  if( isLong == 1 ) {
+  if(isLong == 1) {
     ep  = inHigh[todayIdx];
     sar = newLow;
   } else {
     ep  = inLow[todayIdx];
     sar = newHigh;
   }
-
-  SAR_ROUNDING(sar);
 
   /*
    * Cheat on the newLow and newHigh for the
@@ -220,15 +198,12 @@ TA_LIB_API TA_RetCode TA_SAR(int startIdx, int endIdx,
   newLow  = inLow[todayIdx];
   newHigh = inHigh[todayIdx];
 
-  while( todayIdx <= endIdx ) {
+  while(todayIdx <= endIdx) {
     prevLow  = newLow;
     prevHigh = newHigh;
     newLow  = inLow[todayIdx];
     newHigh = inHigh[todayIdx];
     todayIdx++;
-
-    SAR_ROUNDING(newLow);
-    SAR_ROUNDING(newHigh);
 
     if ( isLong == 1 ) {
       /* Switch to short if the low penetrates the SAR value. */
@@ -254,7 +229,6 @@ TA_LIB_API TA_RetCode TA_SAR(int startIdx, int endIdx,
 
         /* Calculate the new SAR */
         sar = sar + af * (ep - sar);
-        SAR_ROUNDING( sar );
 
         /* Make sure the new SAR is within
          * yesterday's and today's range.
@@ -277,7 +251,6 @@ TA_LIB_API TA_RetCode TA_SAR(int startIdx, int endIdx,
 
         /* Calculate the new SAR */
         sar = sar + af * (ep - sar);
-        SAR_ROUNDING( sar );
 
         /* Make sure the new SAR is within
          * yesterday's and today's range.
@@ -311,7 +284,6 @@ TA_LIB_API TA_RetCode TA_SAR(int startIdx, int endIdx,
 
         /* Calculate the new SAR */
         sar = sar + af * (ep - sar);
-        SAR_ROUNDING( sar );
 
         /* Make sure the new SAR is within
          * yesterday's and today's range.
@@ -336,7 +308,6 @@ TA_LIB_API TA_RetCode TA_SAR(int startIdx, int endIdx,
 
         /* Calculate the new SAR */
         sar = sar + af * (ep - sar);
-        SAR_ROUNDING( sar );
 
         /* Make sure the new SAR is within
          * yesterday's and today's range.
@@ -354,55 +325,59 @@ TA_LIB_API TA_RetCode TA_SAR(int startIdx, int endIdx,
   return ENUM_VALUE(RetCode,TA_SUCCESS,Success);
 }
 
-
 #define  USE_SINGLE_PRECISION_INPUT
 #undef  TA_LIB_PRO
-#if !defined( _MANAGED ) && !defined( _JAVA )
 #undef   TA_PREFIX
 #define  TA_PREFIX(x) TA_S_##x
-#endif
 #undef   INPUT_TYPE
 #define  INPUT_TYPE float
 TA_RetCode TA_S_SAR( int    startIdx,
     int    endIdx,
     const float  inHigh[],
     const float  inLow[],
-    double        optInAcceleration, /* From 0 to TA_REAL_MAX */
-    double        optInMaximum, /* From 0 to TA_REAL_MAX */
+    double       optInAcceleration, /* From 0 to TA_REAL_MAX */
+    double       optInMaximum,      /* From 0 to TA_REAL_MAX */
     int          *outBegIdx,
     int          *outNBElement,
-    double        outReal[] ) {
+    double       outReal[] ) {
+
   ENUM_DECLARATION(RetCode) retCode;
-  int isLong; 
+
+  int isLong;
   int todayIdx, outIdx;
+
   VALUE_HANDLE_INT(tempInt);
+
   double newHigh, newLow, prevHigh, prevLow;
   double af, ep, sar;
+
   ARRAY_LOCAL(ep_temp,1);
 #ifndef TA_FUNC_NO_RANGE_CHECK
   if( startIdx < 0 )
     return ENUM_VALUE(RetCode,TA_OUT_OF_RANGE_START_INDEX,OutOfRangeStartIndex);
+
   if( (endIdx < 0) || (endIdx < startIdx))
     return ENUM_VALUE(RetCode,TA_OUT_OF_RANGE_END_INDEX,OutOfRangeEndIndex);
-#if !defined(_JAVA)
+
   if(!inHigh||!inLow)
     return ENUM_VALUE(RetCode,TA_BAD_PARAM,BadParam);
-#endif
+
   if( optInAcceleration == TA_REAL_DEFAULT )
     optInAcceleration = 2.000000e-2;
   else if( (optInAcceleration < 0.000000e+0) ||  (optInAcceleration > 3.000000e+37) )
     return ENUM_VALUE(RetCode,TA_BAD_PARAM,BadParam);
+
   if( optInMaximum == TA_REAL_DEFAULT )
     optInMaximum = 2.000000e-1;
   else if( (optInMaximum < 0.000000e+0) ||  (optInMaximum > 3.000000e+37) )
     return ENUM_VALUE(RetCode,TA_BAD_PARAM,BadParam);
-#if !defined(_JAVA)
+
   if( !outReal )
     return ENUM_VALUE(RetCode,TA_BAD_PARAM,BadParam);
 #endif
-#endif
   if( startIdx < 1 )
     startIdx = 1;
+
   if( startIdx > endIdx ) {
     VALUE_HANDLE_DEREF_TO_ZERO(outBegIdx);
     VALUE_HANDLE_DEREF_TO_ZERO(outNBElement);
@@ -412,47 +387,46 @@ TA_RetCode TA_S_SAR( int    startIdx,
   af = optInAcceleration;
   if( af > optInMaximum )
     af = optInAcceleration = optInMaximum;
-  retCode = FUNCTION_CALL(MINUS_DM)( startIdx, startIdx, inHigh, inLow, 1,
+    retCode = FUNCTION_CALL(MINUS_DM)( startIdx, startIdx, inHigh, inLow, 1,
       VALUE_HANDLE_OUT(tempInt), VALUE_HANDLE_OUT(tempInt),
       ep_temp );
+
   if( ep_temp[0] > 0 )
     isLong = 0;
   else
     isLong = 1;
-  if( retCode != ENUM_VALUE(RetCode,TA_SUCCESS,Success) )
-  {
+
+  if( retCode != ENUM_VALUE(RetCode,TA_SUCCESS,Success) ) {
     VALUE_HANDLE_DEREF_TO_ZERO(outBegIdx);
     VALUE_HANDLE_DEREF_TO_ZERO(outNBElement);
     return retCode;
   }
+
   VALUE_HANDLE_DEREF(outBegIdx) = startIdx;
-  outIdx = 0;
+
+  outIdx  = 0;
   todayIdx = startIdx;
-  newHigh = inHigh[todayIdx-1];
-  newLow  = inLow[todayIdx-1];
-  SAR_ROUNDING(newHigh);
-  SAR_ROUNDING(newLow);
-  if( isLong == 1 )
-  {
+  newHigh  = inHigh[todayIdx-1];
+  newLow   = inLow[todayIdx-1];
+
+  if( isLong == 1 ) {
     ep  = inHigh[todayIdx];
     sar = newLow;
-  }
-  else
-  {
+  } else {
     ep  = inLow[todayIdx];
     sar = newHigh;
   }
-  SAR_ROUNDING(sar);
+
   newLow  = inLow[todayIdx];
   newHigh = inHigh[todayIdx];
-  while( todayIdx <= endIdx ) {
+
+  while (todayIdx <= endIdx) {
     prevLow  = newLow;
     prevHigh = newHigh;
     newLow  = inLow[todayIdx];
     newHigh = inHigh[todayIdx];
     todayIdx++;
-    SAR_ROUNDING(newLow);
-    SAR_ROUNDING(newHigh);
+
     if( isLong == 1 ) {
       if( newLow <= sar ) {
         isLong = 0;
@@ -467,7 +441,6 @@ TA_RetCode TA_S_SAR( int    startIdx,
         af = optInAcceleration;
         ep = newLow;
         sar = sar + af * (ep - sar);
-        SAR_ROUNDING( sar );
 
         if( sar < prevHigh )
           sar = prevHigh;
@@ -475,14 +448,16 @@ TA_RetCode TA_S_SAR( int    startIdx,
           sar = newHigh;
       } else {
         outReal[outIdx++] = sar;
+
         if( newHigh > ep ) {
           ep = newHigh;
           af += optInAcceleration;
           if( af > optInMaximum )
             af = optInMaximum;
         }
+
         sar = sar + af * (ep - sar);
-        SAR_ROUNDING( sar );
+
         if( sar > prevLow )
           sar = prevLow;
         if( sar > newLow )
@@ -492,29 +467,33 @@ TA_RetCode TA_S_SAR( int    startIdx,
       if( newHigh >= sar ) {
         isLong = 1;
         sar = ep;
+
         if( sar > prevLow )
           sar = prevLow;
         if( sar > newLow )
           sar = newLow;
+
         outReal[outIdx++] = sar;
         af = optInAcceleration;
         ep = newHigh;
         sar = sar + af * (ep - sar);
-        SAR_ROUNDING( sar );
+
         if( sar > prevLow )
           sar = prevLow;
         if( sar > newLow )
           sar = newLow;
       } else {
         outReal[outIdx++] = sar;
+
         if( newLow < ep ) {
           ep = newLow;
           af += optInAcceleration;
           if( af > optInMaximum )
             af = optInMaximum;
         }
+
         sar = sar + af * (ep - sar);
-        SAR_ROUNDING( sar );
+
         if( sar < prevHigh )
           sar = prevHigh;
         if( sar < newHigh )
