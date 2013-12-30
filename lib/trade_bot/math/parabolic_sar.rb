@@ -61,8 +61,6 @@ module TradeBot::Math
     ep_temp = (minus_delta > 0 && plus_delta < minus_delta) ? minus_delta : 0
     isLong = (ep_temp > 0 ? 0 : 1)
 
-    output = []
-
     # Write the first SAR
     todayIdx = startIdx
     newHigh  = inHigh[todayIdx - 1]
@@ -79,6 +77,8 @@ module TradeBot::Math
     # Cheat on the newLow and newHigh for the first iteration
     newLow = inLow[todayIdx]
     newHigh = inHigh[todayIdx]
+
+    output = []
 
     while (todayIdx <= endIdx)
       prevLow = newLow
