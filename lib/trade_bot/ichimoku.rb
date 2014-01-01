@@ -16,31 +16,11 @@ module TradeBot
       ((hh + ll) / 2)
     end
 
-    def initialize(dataset = [], tenkan_n = 9, kijun_n = 26, senkou_n = 52)
-      @dataset = dataset
-
-      @tenkan_n = 9
-      @kijun_n  = 26
-      @senkou_n = 52
-
-      @tenkan = @kijun = @senkou_a = @senkou_b = @chikou = []
-    end
-
-    def push(candle)
-      @dataset.push(candle)
-
-      @tenkan.push(calc(@tenkan_n))
-      @kijun.push(calc(@kijun_n))
-
-      @senkou_a.push((@tenkan.last + @kijun.last) / 2)
-      @senkou_b.push(calc(@senkou_n))
-
-      @chikou.push(@dataset[-2]['close']) unless @dataset.size < 2
-    end
-
     # The results of this need to be confirmed against some official
     # documentation. I believe the lags aren't real, and the numerics are
     # probably wrong.
+    #
+    # @return [Hash]
     def current
       {
         'tenkan'   => @tenkan.last,
@@ -52,6 +32,35 @@ module TradeBot
         'lag_senkou_a' => @senkou_a[-@senkou_n],
         'lag_senkou_b' => @senkou_b[-@senkou_n]
       }
+    end
+
+    # Setup the ichimoku instance and set the various length parameters to
+    # calculate how far back to look.
+    #
+    # @param [Fixnum] tenkan_n
+    # @param [Fixnum] kijun_n
+    # @param [Fixnum] senkou_n
+    def initialize(tenkan_n = 9, kijun_n = 26, senkou_n = 52)
+      @tenkan_n = tenkan_n
+      @kijun_n  = kijun_n
+      @senkou_n = senkou_n
+
+      @dataset = @tenkan = @kijun = @senkou_a = @senkou_b = @chikou = []
+    end
+
+    # Add another candle object to the calculations.
+    #
+    # @param [Hash] candle
+    def push(candle)
+      @dataset.push(candle)
+
+      @tenkan.push(calc(@tenkan_n))
+      @kijun.push(calc(@kijun_n))
+
+      @senkou_a.push((@tenkan.last + @kijun.last) / 2)
+      @senkou_b.push(calc(@senkou_n))
+
+      @chikou.push(@dataset[-2]['close']) unless @dataset.size < 2
     end
   end
 end
