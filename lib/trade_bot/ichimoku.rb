@@ -1,6 +1,12 @@
 
 module TradeBot
   class Ichimoku
+    # Perform the ichimoku computation on the last count number of elements.
+    # This primarily involved taking the average of the highest high and lowest
+    # low out of the previous count elements.
+    #
+    # @param [Fixnum] count
+    # @return [Float]
     def calc(count)
       negative = (count > @dataset.size) ? 0 : -count
 
