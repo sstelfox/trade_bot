@@ -71,7 +71,7 @@ module TradeBot::Actors
     def buy
       btc = @redis.hget("bot:#{@name}:settings", 'current:btc')
       cash = @redis.hget("bot:#{@name}:settings", 'current:usd')
-      price = @candles.last['last']
+      price = @candles.last['avg']
 
       new_btc = (cash / price).floor
       total_cost = (new_btc * price).floor
@@ -86,7 +86,7 @@ module TradeBot::Actors
     def sell
       btc = @redis.hget("bot:#{@name}:settings", 'current:btc')
       cash = @redis.hget("bot:#{@name}:settings", 'current:usd')
-      price = @candles.last['last']
+      price = @candles.last['avg']
 
       new_cash = ((btc / 1e8) * price).floor
       sold_btc = (new_cache / price).floor
