@@ -126,7 +126,7 @@ module TradeBot::Actors
       # No more setup to do if we don't have any data
       return if @candles.empty?
 
-      info('Starting bot %s run with %0.2f bitcoins, %0.2f cash' % [@name, (btc / 1e8), (usd / 1e5)])
+      info('Starting bot %s run with %0.2f bitcoins, %0.2f cash. Current value: %0.2f' % [@name, (btc / 1e8), (usd / 1e5), ((btc / 1e8) * (@candles.last['avg'] / 1e5))])
 
       @candles.each do |c|
         push(c)
