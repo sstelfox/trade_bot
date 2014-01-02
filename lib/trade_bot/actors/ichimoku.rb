@@ -114,13 +114,11 @@ module TradeBot::Actors
     # Sets up required values within the redis store for this bot, mostly
     # currency values
     def setup_bot
-      usd = @redis.hget("bot:#{@name}:settings", 'start:usd')
-      btc = @redis.hget("bot:#{@name}:settings", 'start:btc')
+      usd = @redis.hget("bot:#{@name}:settings", 'start:usd').to_i
+      btc = @redis.hget("bot:#{@name}:settings", 'start:btc').to_i
 
-      @redis.pipelined do
-        @redis.hsetnx("bot:#{@name}:settings", 'current:usd', usd * 1e5)
-        @redis.hsetnx("bot:#{@name}:settings", 'current:btc', btc * 1e8)
-      end
+      @redis.hsetnx("bot:#{@name}:settings", 'current:usd', usd)
+      @redis.hsetnx("bot:#{@name}:settings", 'current:btc', btc)
 
       # Use the 15 minute candlestick data
       @candles = (@redis.zrange('trading:candlestick:900', 0, -1) || []).map { |d| JSON.parse(d) }
