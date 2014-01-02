@@ -119,9 +119,12 @@ module TradeBot::Actors
       end
 
       # Use the 15 minute candlestick data
-      @candles = @redis.zrange('trading:candlestick:900', 0, -1).map { |d| JSON.parse(d) }
+      @candles = (@redis.zrange('trading:candlestick:900', 0, -1) || []).map { |d| JSON.parse(d) }
 
-      info('Starting bot %s run with %0.2f bitcoins, %0.2f cash, current value: %0.2f' % [@name, btc, usd, ((@candles['last'] / 1e5) * btc)])
+      # No more setup to do if we don't have any data
+      return if @candles.empty?
+
+      info('Starting bot %s run with %0.2f bitcoins, %0.2f cash, current value: %0.2f' % [@name, btc, usd, ((@candles.last['last'] / 1e5) * btc)])
 
       @candles.each do |c|
         push(c)
