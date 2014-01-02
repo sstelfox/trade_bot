@@ -80,7 +80,7 @@ module TradeBot::Actors
       @redis.hset("bot:#{@name}:settings", 'current:btc', new_btc + btc)
       @redis.hset("bot:#{@name}:settings", 'current:usd', usd)
 
-      info('Purchased %f bitcoins at %0.2f for a total of %0.2f' % (btc / 1e8), (price / 1e5), (total_cost / 1e5))
+      info('Purchased %f bitcoins at %0.2f for a total of %0.2f' % [(btc / 1e8), (price / 1e5), (total_cost / 1e5)])
     end
 
     def sell
@@ -95,7 +95,7 @@ module TradeBot::Actors
       @redis.hset("bot:#{@name}:settings", 'current:btc', remaining_btc)
       @redis.hset("bot:#{@name}:settings", 'current:usd', cash + new_cash)
 
-      info('Sold %f bitcoins at %0.2f for a total of %0.2f' % (sold_btc / 1e8), (price / 1e5), (new_cash / 1e5))
+      info('Sold %f bitcoins at %0.2f for a total of %0.2f' % [(sold_btc / 1e8), (price / 1e5), (new_cash / 1e5)])
     end
 
     def push(data)
@@ -121,7 +121,7 @@ module TradeBot::Actors
       # Use the 15 minute candlestick data
       @candles = @redis.zrange('trading:candlestick:900', 0, -1).map { |d| JSON.parse(d) }
 
-      info('Starting bot %s run with %0.2f bitcoins, %0.2f cash, current value: %0.2f' % @name, btc, usd, ((@candles['last'] / 1e5) * btc))
+      info('Starting bot %s run with %0.2f bitcoins, %0.2f cash, current value: %0.2f' % [@name, btc, usd, ((@candles['last'] / 1e5) * btc)])
 
       @candles.each do |c|
         push(c)
