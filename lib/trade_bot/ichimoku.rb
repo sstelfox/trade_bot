@@ -22,6 +22,8 @@ module TradeBot
     #
     # @return [Hash]
     def current
+      return false unless has_enough_data?
+
       {
         'tenkan'   => @tenkan.last,
         'kijun'    => @kijun.last,
@@ -32,6 +34,14 @@ module TradeBot
         'lag_senkou_a' => @senkou_a[-@senkou_n],
         'lag_senkou_b' => @senkou_b[-@senkou_n]
       }
+    end
+
+    # Checks whether there is enough data in the instance of this class to
+    # perform a calculation.
+    #
+    # @return [Boolean]
+    def has_enough_data?
+      (@dataset.size >= [@tenkan_n, @kijun_n, @senkou_n].max)
     end
 
     # Setup the ichimoku instance and set the various length parameters to
