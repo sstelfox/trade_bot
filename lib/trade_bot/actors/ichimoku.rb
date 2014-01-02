@@ -121,7 +121,7 @@ module TradeBot::Actors
       @redis.hsetnx("bot:#{@name}:settings", 'current:btc', btc)
 
       # Use the 15 minute candlestick data
-      @candles = (@redis.zrange('trading:candlestick:900', 0, -1) || []).map { |d| JSON.parse(d) }
+      @candles = (@redis.zrange('trading:candlestick:3600', 0, -1) || []).map { |d| JSON.parse(d) }
 
       # No more setup to do if we don't have any data
       return if @candles.empty?
