@@ -23,8 +23,12 @@ module TradeBot::Actors
         'max_acceleration' => 0.15,
         'pos'              => false
       }
+    end
 
+    def start
+      debug('Starting %s bot setup' % [@name])
       setup_bot(options.fetch(:usd_init, 0), options.fetch(:btc_init, 5))
+      debug('Finished setting up bot %s' % [@name])
     end
 
     def process

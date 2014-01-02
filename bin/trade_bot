@@ -12,6 +12,7 @@ Celluloid::Actor[:pub_nub]        = TradeBot::Actors::PubNub.new
 
 # Begin processing the data
 Celluloid::Actor[:data_processor].async.process
+Celluloid::Actor[:ichimoku].async.start
 Celluloid::Actor[:pub_nub].async.process
 
 loop { sleep 1 }
