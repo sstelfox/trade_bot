@@ -10,8 +10,8 @@ module TradeBot
     def calc(count)
       negative = (count > @dataset.size) ? 0 : -count
 
-      hh = @dataset.map { |d| d['high'] }.max
-      ll = @dataset.map { |d| d['low']  }.min
+      hh = @dataset.map { |d| d['high'].to_i }.max
+      ll = @dataset.map { |d| d['low'].to_i  }.min
 
       ((hh + ll) / 2)
     end
