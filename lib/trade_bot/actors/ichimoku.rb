@@ -23,11 +23,15 @@ module TradeBot::Actors
         'max_acceleration' => 0.15,
         'pos'              => false
       }
+
+      @redis.hsetnx("bot:#{@name}:settings", 'start:usd', options.fetch(:usd_init, 0) * 1e5)
+      @redis.hsetnx("bot:#{@name}:settings", 'start:btc', options.fetch(:btc_init, 5) * 1e8)
+      @redis.hsetnx("bot:#{@name}:settings", 'start:time', Time.now.to_f)
     end
 
     def start
       debug('Starting %s bot setup' % [@name])
-      setup_bot(options.fetch(:usd_init, 0), options.fetch(:btc_init, 5))
+      setup_bot
       debug('Finished setting up bot %s' % [@name])
     end
 
@@ -109,15 +113,11 @@ module TradeBot::Actors
 
     # Sets up required values within the redis store for this bot, mostly
     # currency values
-    #
-    # @param [Fixnum] usd
-    # @param [Fixnum] btc
-    def setup_bot(usd, btc)
-      @redis.pipelined do
-        @redis.hsetnx("bot:#{@name}:settings", 'start:usd', usd * 1e5)
-        @redis.hsetnx("bot:#{@name}:settings", 'start:btc', btc * 1e8)
-        @redis.hsetnx("bot:#{@name}:settings", 'start:time', Time.now.to_f)
+    def setup_bot
+      usd = @redis.hget("bot:#{@name}:settings", 'start:usd')
+      btc = @redis.hget("bot:#{@name}:settings", 'start:btc')
 
+      @redis.pipelined do
         @redis.hsetnx("bot:#{@name}:settings", 'current:usd', usd * 1e5)
         @redis.hsetnx("bot:#{@name}:settings", 'current:btc', btc * 1e8)
       end
