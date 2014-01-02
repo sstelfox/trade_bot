@@ -11,7 +11,7 @@ module TradeBot
       negative = (count > @dataset.size) ? 0 : -count
 
       hh = @dataset.map { |d| d['high'] }.max
-      ll = @dataset.map { |d| d['low']  }.low
+      ll = @dataset.map { |d| d['low']  }.min
 
       ((hh + ll) / 2)
     end
