@@ -10,8 +10,8 @@ module TradeBot
     def calc(count)
       negative = (count > @dataset.size) ? 0 : -count
 
-      hh = @dataset.map { |d| d['high'].to_i }.max
-      ll = @dataset.map { |d| d['low'].to_i  }.min
+      hh = (@dataset.map { |d| d['high'] }).max
+      ll = (@dataset.map { |d| d['low']  }).min
 
       ((hh + ll) / 2)
     end
@@ -55,7 +55,12 @@ module TradeBot
       @kijun_n  = kijun_n
       @senkou_n = senkou_n
 
-      @dataset = @tenkan = @kijun = @senkou_a = @senkou_b = @chikou = []
+      @dataset = []
+      @tenkan = []
+      @kijun = []
+      @senkou_a = []
+      @senkou_b = []
+      @chikou = []
     end
 
     # Add another candle object to the calculations.
