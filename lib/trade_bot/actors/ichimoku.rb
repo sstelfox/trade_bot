@@ -118,7 +118,7 @@ module TradeBot::Actors
       @ichi.push(data)
       # We don't need to keep every piece of data we collect, only the most
       # recent bit of it.
-      @candles = @candles.slice(-25..-1)
+      @candles = @candles.slice(-25..-1) if @candles.size > 25
     end
 
     # Sets up required values within the redis store for this bot, mostly
