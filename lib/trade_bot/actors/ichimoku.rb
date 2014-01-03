@@ -15,6 +15,7 @@ module TradeBot::Actors
       debug('Setting up the icimoku bot actor')
 
       @name = name.downcase.scan(/[a-z]/i).join
+      @process_count = 0
       @redis = TradeBot.redis
       @ichi  = TradeBot::Ichimoku.new(8, 11, 22)
 
@@ -36,6 +37,7 @@ module TradeBot::Actors
     end
 
     def process
+      @process_count += 1
       cur = @ichi.current
 
       diff = 100 * ((cur['tenkan'] - cur['kijun']) / ((cur['tenkan'] + cur['kijun']) / 2))
@@ -73,6 +75,11 @@ module TradeBot::Actors
           @settings['pos'] = :short
           sell
         end
+      end
+
+      if @process_count >= 100
+        debug("Ichimoku bot has processed another #{@process_count} inputs.")
+        @process_count = 0
       end
     end
 
