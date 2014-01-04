@@ -78,7 +78,7 @@ module TradeBot::Actors
       end
 
       if @process_count >= 100
-        debug("Ichimoku bot has processed another #{@process_count} inputs.")
+        debug("Ichimoku bot has processed #{@process_count} inputs.")
         @process_count = 0
       end
     end
