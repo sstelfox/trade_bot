@@ -68,8 +68,7 @@ module TradeBot
     # @param [Hash] candle
     def push(candle)
       @dataset.push(candle)
-      max = -([@tenkan_n, @kijun_n, @senkou_n].max)
-      @dataset = @dataset.slice(max..-1) if @dataset.size > max
+      (@dataset = @dataset.slice(-([@tenkan_n, @kijun_n, @senkou_n].max)..-1)) if @dataset.size > 25
 
       @tenkan.push(calc(@tenkan_n))
       @kijun.push(calc(@kijun_n))
