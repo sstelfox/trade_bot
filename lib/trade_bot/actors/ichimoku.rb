@@ -78,7 +78,7 @@ module TradeBot::Actors
       end
 
       if @process_count >= 100
-        debug("Ichimoku bot has processed another #{@process_count} inputs.")
+        debug("Ichimoku bot has processed #{@process_count} inputs.")
         @process_count = 0
       end
     end
@@ -118,7 +118,7 @@ module TradeBot::Actors
       @ichi.push(data)
       # We don't need to keep every piece of data we collect, only the most
       # recent bit of it.
-      @candles = @candles.slice(-25..-1)
+      @candles = @candles.slice(-25..-1) if @candles.size > 25
     end
 
     # Sets up required values within the redis store for this bot, mostly

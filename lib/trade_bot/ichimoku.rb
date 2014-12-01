@@ -10,8 +10,8 @@ module TradeBot
     def calc(count)
       negative = (count > @dataset.size) ? 0 : -count
 
-      hh = (@dataset.map { |d| d['high'] }).max
-      ll = (@dataset.map { |d| d['low']  }).min
+      hh = (@dataset[negative..-1].map { |d| d['high'] }).max
+      ll = (@dataset[negative..-1].map { |d| d['low']  }).min
 
       ((hh + ll) / 2)
     end
@@ -68,7 +68,7 @@ module TradeBot
     # @param [Hash] candle
     def push(candle)
       @dataset.push(candle)
-      @dataset = @dataset.slice(-([@tenkan_n, @kijun_n, @senkou_n].max)..-1)
+      (@dataset = @dataset.slice(-([@tenkan_n, @kijun_n, @senkou_n].max)..-1)) if @dataset.size > 25
 
       @tenkan.push(calc(@tenkan_n))
       @kijun.push(calc(@kijun_n))
